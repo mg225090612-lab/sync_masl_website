@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import type { ChampionItem, ChampionRecord } from '@/lib/types';
 
 export default function ChampionsPage() {
   const sportsTabs = ["남자축구", "여자축구", "남자농구", "여자배구"];
-  const [activeTab, setActiveTab] = useState("남자축구");
-  const [selectedWinner, setSelectedWinner] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<string>("남자축구");
+  const [selectedWinner, setSelectedWinner] = useState<ChampionRecord | null>(null);
 
-  // 25 Fall 데이터를 요청하신 대로 "Class of ~" 형식으로 업데이트했습니다!
-  const hallOfFame = [
+  const hallOfFame: ChampionItem[] = [
     {
       sport: "남자축구",
       emoji: "⚽",
@@ -42,99 +42,116 @@ export default function ChampionsPage() {
   const filteredData = hallOfFame.filter(item => item.sport === activeTab);
 
   return (
-    <div className="min-h-screen bg-white pb-20 pt-32 px-6 font-sans text-black relative">
-      
-      {/* 1. 타이틀 섹션 */}
-      <div className="max-w-3xl mx-auto mb-16">
-        <h1 className="text-7xl font-black italic tracking-tighter mb-4 text-black uppercase leading-none">CHAMPIONS</h1>
-        <div className="h-2 w-20 bg-blue-600 mb-6"></div>
-        <p className="text-gray-400 font-bold text-[0.6rem] uppercase tracking-[0.5em]">Official Winners Archive</p>
+    <div className="min-h-screen bg-[#050816] text-white pt-32 px-6 pb-20 relative">
+
+      {/* 🔥 배경 */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.2),transparent_30%),radial-gradient(circle_at_bottom,rgba(168,85,247,0.2),transparent_30%)]" />
       </div>
 
-      {/* 2. 종목 탭 */}
-      <div className="max-w-3xl mx-auto mb-16 border-b border-gray-100 flex gap-1 overflow-x-auto no-scrollbar py-2">
+      {/* 🔥 타이틀 */}
+      <div className="max-w-4xl mx-auto mb-20">
+        <h1 className="text-6xl md:text-8xl font-black italic tracking-tight leading-none">
+          CHAMPIONS
+        </h1>
+        <div className="h-[3px] w-24 bg-gradient-to-r from-cyan-400 to-violet-500 mt-4 mb-6"></div>
+        <p className="text-xs tracking-[0.5em] text-white/40 uppercase">
+          Official Winners Archive
+        </p>
+      </div>
+
+      {/* 🔥 탭 */}
+      <div className="max-w-4xl mx-auto mb-14 flex gap-3 overflow-x-auto no-scrollbar">
         {sportsTabs.map((tab) => (
-          <button 
-            key={tab} 
-            onClick={() => setActiveTab(tab)} 
-            className={`px-6 py-4 font-black text-sm whitespace-nowrap transition-all relative ${activeTab === tab ? 'text-blue-600' : 'text-gray-400 hover:text-black'}`}
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-5 py-3 rounded-full text-sm font-bold transition-all
+            ${activeTab === tab
+                ? "bg-gradient-to-r from-cyan-400 to-violet-500 text-black shadow-lg scale-105"
+                : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+              }`}
           >
             {tab}
-            {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-600 rounded-full"></div>}
           </button>
         ))}
       </div>
 
-      {/* 3. 우승팀 리스트 */}
-      <div className="max-w-3xl mx-auto space-y-4">
-        {filteredData.length > 0 ? (
-          filteredData.map((item) => (
-            <div key={item.sport} className="grid gap-3">
-              {item.history.map((record, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => setSelectedWinner(record)} 
-                  className="group flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] cursor-pointer hover:bg-black hover:text-white transition-all duration-300 shadow-sm border border-transparent hover:border-blue-600"
-                >
-                  <div>
-                    <p className="text-[0.6rem] font-black text-blue-600 group-hover:text-blue-400 mb-1 uppercase tracking-widest">{record.season}</p>
-                    <h3 className="text-3xl font-black tracking-tight italic group-hover:scale-105 origin-left transition-transform duration-300 uppercase leading-none">{record.winner}</h3>
-                  </div>
-                  <div className="text-right flex items-center gap-4">
-                    <span className="text-[0.6rem] font-black text-gray-300 group-hover:text-gray-600 uppercase tracking-widest border border-gray-200 group-hover:border-gray-800 px-4 py-1.5 rounded-full transition-colors">{record.class}</span>
-                    <span className="text-3xl grayscale group-hover:grayscale-0 transition-all">🏆</span>
-                  </div>
+      {/* 🔥 카드 리스트 */}
+      <div className="max-w-4xl mx-auto space-y-6">
+        {filteredData.map((item) =>
+          item.history.map((record, idx) => (
+            <div
+              key={idx}
+              onClick={() => setSelectedWinner(record)}
+              className="group relative p-8 rounded-[28px] bg-white/5 backdrop-blur-xl border border-white/10 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:bg-white/10"
+            >
+              {/* glow */}
+              <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover:opacity-100 transition bg-gradient-to-r from-cyan-400/10 to-violet-400/10" />
+
+              <div className="flex justify-between items-center relative z-10">
+                <div>
+                  <p className="text-[10px] tracking-widest text-cyan-300 mb-2 uppercase">
+                    {record.season}
+                  </p>
+                  <h3 className="text-3xl md:text-4xl font-black italic tracking-tight">
+                    {record.winner}
+                  </h3>
                 </div>
-              ))}
+
+                <div className="text-right flex items-center gap-4">
+                  <span className="text-[10px] px-4 py-1 rounded-full border border-white/20 text-white/50">
+                    {record.class}
+                  </span>
+                  <span className="text-4xl group-hover:scale-110 transition">
+                    🏆
+                  </span>
+                </div>
+              </div>
             </div>
           ))
-        ) : (
-          <div className="py-20 text-center bg-gray-50 rounded-[3rem] border border-dashed border-gray-100">
-            <p className="text-gray-300 font-black italic tracking-widest uppercase text-xs">No Records Found</p>
-          </div>
         )}
       </div>
 
-      {/* ⭐ 4. 우승 사진 팝업 */}
+      {/* 🔥 팝업 */}
       {selectedWinner && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-6 transition-all"
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-[999]"
           onClick={() => setSelectedWinner(null)}
         >
-          <div 
-            className="bg-white rounded-[3.5rem] p-8 max-w-sm w-full shadow-2xl relative"
+          <div
+            className="bg-[#0b1220] border border-white/10 rounded-[32px] p-8 max-w-md w-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center mb-8">
-              <p className="text-blue-600 font-black text-[0.65rem] uppercase tracking-[0.3em] mb-2">{selectedWinner.season} WINNER</p>
-              <h2 className="text-4xl font-black italic tracking-tighter text-black uppercase leading-tight">{selectedWinner.winner}</h2>
-              <p className="mt-2 text-[0.6rem] font-bold text-gray-300 uppercase tracking-widest">{selectedWinner.class}</p>
-            </div>
-            
-            <div className="relative aspect-square w-full rounded-[2.5rem] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner">
-              {selectedWinner.photo ? (
-                <img src={selectedWinner.photo} className="w-full h-full object-cover" alt="Champion" />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-gray-200">
-                  <span className="text-6xl mb-4">🏆</span>
-                  <p className="text-[0.65rem] font-black uppercase tracking-widest opacity-50 text-gray-400">Moment Pending</p>
-                </div>
-              )}
+            <div className="text-center mb-6">
+              <p className="text-xs text-cyan-300 tracking-widest uppercase">
+                {selectedWinner.season}
+              </p>
+              <h2 className="text-3xl font-black italic mt-2">
+                {selectedWinner.winner}
+              </h2>
+              <p className="text-xs text-white/40 mt-2">
+                {selectedWinner.class}
+              </p>
             </div>
 
-            <button 
+            <div className="aspect-square bg-white/5 rounded-2xl flex items-center justify-center">
+              <span className="text-6xl">🏆</span>
+            </div>
+
+            <button
               onClick={() => setSelectedWinner(null)}
-              className="mt-8 w-full py-5 bg-black text-white font-black text-[0.7rem] rounded-3xl transition-all uppercase tracking-widest hover:bg-blue-600 active:scale-95"
+              className="mt-6 w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-violet-500 text-black font-bold hover:scale-95 transition"
             >
-              Close Archive
+              CLOSE
             </button>
           </div>
         </div>
       )}
 
-      {/* 하단 문구 */}
-      <div className="mt-60 text-center opacity-10 font-black text-8xl italic tracking-tighter select-none text-gray-900 leading-none">
-        MASL <span className="text-blue-600">&</span> SYNC
+      {/* 🔥 하단 */}
+      <div className="mt-40 text-center opacity-10 text-7xl font-black italic tracking-tight">
+        MASL
       </div>
     </div>
   );
