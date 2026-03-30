@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { ChampionItem, ChampionRecord } from '@/lib/types';
 
 export default function ChampionsPage() {
   const sportsTabs = ["남자축구", "여자축구", "남자농구", "여자배구"];
-  const [activeTab, setActiveTab] = useState<string>("남자축구");
-  const [selectedWinner, setSelectedWinner] = useState<ChampionRecord | null>(null);
+  const [activeTab, setActiveTab] = useState("남자축구");
+  const [selectedWinner, setSelectedWinner] = useState<any>(null);
 
-  const hallOfFame: ChampionItem[] = [
+  const hallOfFame = [
     {
       sport: "남자축구",
       emoji: "⚽",
