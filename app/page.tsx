@@ -1,68 +1,93 @@
-// app/page.tsx
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import Navbar from "./components/Navbar";
 
-export default async function HomePage() {
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('*')
-    .eq('is_active', true)
-    .order('match_date', { ascending: true });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
-  const sports = ["남자축구", "여자축구", "남자농구", "여자배구"];
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
+export const metadata: Metadata = {
+  title: "MASL / GVR 스포츠 커뮤니티",
+  description: "스포츠 매치 정보 및 유저 평점 시스템",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-black pt-20">
-      {/* 1. 상단 하이라이트 */}
-      <section className="px-6 py-10 max-w-4xl mx-auto text-center">
-        <h2 className="text-xs font-black mb-6 text-blue-600 uppercase tracking-[0.2em]">Upcoming Match</h2>
-        {matches && matches.length > 0 ? (
-          <div className="bg-gradient-to-br from-blue-700 to-indigo-900 rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden group hover:shadow-2xl transition-all">
-             {/* 배경 데코레이션 */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-blue-400/20 transition-colors" />
-            
-             <p className="text-2xl font-black">{matches[0].team_a} VS {matches[0].team_b}</p>
-             <p className="mt-4 text-blue-200 text-sm font-bold">{new Date(matches[0].match_date).toLocaleString('ko-KR')}</p>
-             <Link href="/gvr/rate" className="inline-block mt-8 bg-white text-blue-600 px-8 py-3 rounded-full font-black text-sm hover:bg-blue-50 transition-all shadow-xl">
-               평점 남기러 가기
-             </Link>
+    <html
+      lang="ko"
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth`}
+    >
+      <body className="min-h-screen bg-[#050816] text-white antialiased">
+        <div className="relative flex min-h-screen flex-col overflow-x-hidden">
+          {/* Background */}
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_30%),radial-gradient(circle_at_bottom,rgba(34,197,94,0.10),transparent_28%),linear-gradient(180deg,#050816_0%,#0b1220_45%,#050816_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:44px_44px] opacity-[0.18]" />
+            <div className="absolute left-1/2 top-0 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
           </div>
-        ) : (
-          <div className="bg-white p-16 rounded-[3rem] border-2 border-dashed border-gray-200 text-gray-400 text-center shadow-inner">
-            <p className="text-gray-300 font-black text-xl mb-2">NO UPCOMING MATCHES</p>
-            <p className="text-gray-400 text-sm">현재 예정된 공식 경기가 없습니다.</p>
-          </div>
-        )}
-      </section>
 
-      {/* 2. 종목별 토너먼트 (스크롤) */}
-      <section className="px-6 py-10 max-w-4xl mx-auto space-y-20">
-        {sports.map((sport) => (
-          <div key={sport}>
-            <h3 className="text-2xl font-black mb-6 italic tracking-tight">{sport} <span className="text-blue-600">토너먼트</span></h3>
-            <div className="aspect-[16/9] bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex items-center justify-center text-gray-300 font-bold italic relative group overflow-hidden">
-               {/* 임시 Placeholder 디자인 */}
-              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50" />
-              <div className="relative z-10 text-center">
-                <p className="text-gray-300 font-black mb-1 uppercase tracking-[0.2em] text-xs">Bracket Update Needed</p>
-                <p className="text-gray-400 text-[0.65rem] italic font-medium">[ 대진표 사진 업데이트 예정 ]</p>
+          {/* Header */}
+          <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07101f]/70 backdrop-blur-2xl">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <Navbar />
+            </div>
+          </header>
+
+          {/* Hero strip */}
+          <section className="relative border-b border-white/10">
+            <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+              <div className="flex flex-col gap-4">
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-400/20 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-[0.18em] text-cyan-300 uppercase backdrop-blur-md">
+                  MASL / GVR
+                </div>
+                <div>
+                  <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                    Modern Sports
+                    <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                      {" "}
+                      Community Platform
+                    </span>
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-white/65 sm:text-base">
+                    매치 정보, 팀 데이터, 유저 평점이 하나로 연결된 세련된 스포츠 커뮤니티 경험
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </section>
+          </section>
 
-      {/* ⭐ 하단 문구 수정 반영 (MASL & SYNC) */}
-      <div className="mt-32 mb-10 text-center select-none">
-        <div className="inline-block px-8 py-2 bg-gray-100 rounded-full mb-4 shadow-inner border border-gray-200">
-          <p className="text-[0.6rem] font-black text-gray-400 uppercase tracking-[0.4em]">
-            Official Sports Platform
-          </p>
+          {/* Main */}
+          <main className="flex-1">
+            <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+              <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+                <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <footer className="mt-8 border-t border-white/10 bg-black/20 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-white/50 sm:flex-row sm:px-6 lg:px-8">
+              <p>© 2026 MASL / GVR. All rights reserved.</p>
+              <p className="tracking-[0.2em] text-white/35 uppercase">
+                Elevated UI for athletes & fans
+              </p>
+            </div>
+          </footer>
         </div>
-        <div className="opacity-10 font-black text-6xl md:text-8xl italic tracking-tighter text-gray-900 leading-none">
-          MASL <span className="text-blue-600">&</span> SYNC
-        </div>
-      </div>
-    </div>
+      </body>
+    </html>
   );
 }
