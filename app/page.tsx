@@ -1,67 +1,70 @@
-// app/page.tsx
-import { supabase } from '@/lib/supabase';
-import Link from 'next/link';
+'use client';
 
-export default async function HomePage() {
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('*')
-    .eq('is_active', true)
-    .order('match_date', { ascending: true });
-
-  const sports = ["남자축구", "여자축구", "남자농구", "여자배구"];
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-black pt-20">
-      {/* 1. 상단 하이라이트 */}
-      <section className="px-6 py-10 max-w-4xl mx-auto text-center">
-        <h2 className="text-xs font-black mb-6 text-blue-600 uppercase tracking-[0.2em]">Upcoming Match</h2>
-        {matches && matches.length > 0 ? (
-          <div className="bg-gradient-to-br from-blue-700 to-indigo-900 rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden group hover:shadow-2xl transition-all">
-             {/* 배경 데코레이션 */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-blue-400/20 transition-colors" />
-            
-             <p className="text-2xl font-black">{matches[0].team_a} VS {matches[0].team_b}</p>
-             <p className="mt-4 text-blue-200 text-sm font-bold">{new Date(matches[0].match_date).toLocaleString('ko-KR')}</p>
-             <Link href="/gvr/rate" className="inline-block mt-8 bg-white text-blue-600 px-8 py-3 rounded-full font-black text-sm hover:bg-blue-50 transition-all shadow-xl">
-               평점 남기러 가기
-             </Link>
-          </div>
-        ) : (
-          <div className="bg-white p-16 rounded-[3rem] border-2 border-dashed border-gray-200 text-gray-400 text-center shadow-inner">
-            <p className="text-gray-300 font-black text-xl mb-2">NO UPCOMING MATCHES</p>
-            <p className="text-gray-400 text-sm">현재 예정된 공식 경기가 없습니다.</p>
-          </div>
-        )}
-      </section>
+    <div className="relative min-h-screen overflow-hidden bg-[#06101f] px-6 pb-20 pt-32 text-white">
+      
+      {/* 🔥 배경 */}
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
+      <div className="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
-      {/* 2. 종목별 토너먼트 (스크롤) */}
-      <section className="px-6 py-10 max-w-4xl mx-auto space-y-20">
-        {sports.map((sport) => (
-          <div key={sport}>
-            <h3 className="text-2xl font-black mb-6 italic tracking-tight">{sport} <span className="text-blue-600">토너먼트</span></h3>
-            <div className="aspect-[16/9] bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex items-center justify-center text-gray-300 font-bold italic relative group overflow-hidden">
-               {/* 임시 Placeholder 디자인 */}
-              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-50" />
-              <div className="relative z-10 text-center">
-                <p className="text-gray-300 font-black mb-1 uppercase tracking-[0.2em] text-xs">Bracket Update Needed</p>
-                <p className="text-gray-400 text-[0.65rem] italic font-medium">[ 대진표 사진 업데이트 예정 ]</p>
-              </div>
+      <div className="mx-auto max-w-6xl">
+
+        {/* 🔥 HEADER */}
+        <div className="mb-16">
+          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-cyan-300">
+            MASL HUB
+          </div>
+
+          <div className="mt-6">
+            <h1 className="text-5xl md:text-8xl font-black italic tracking-[-0.05em] leading-none">
+              <span className="text-white">SPORTS </span>
+              <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">
+                PLATFORM
+              </span>
+            </h1>
+
+            <div className="mt-5 h-[3px] w-28 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_20px_rgba(34,211,238,0.55)]" />
+          </div>
+        </div>
+
+        {/* 🔥 UPCOMING MATCH */}
+        <div className="mb-16">
+          <p className="mb-4 text-xs tracking-[0.3em] text-cyan-300 uppercase">
+            UPCOMING MATCH
+          </p>
+
+          <div className="flex min-h-[180px] items-center justify-center rounded-[32px] border border-cyan-400/10 bg-white/[0.045] backdrop-blur-xl text-center">
+            <div>
+              <p className="text-lg font-black italic text-white/70">
+                NO UPCOMING MATCHES
+              </p>
+              <p className="text-sm text-white/40 mt-2">
+                현재 예정된 공식 경기가 없습니다.
+              </p>
             </div>
           </div>
-        ))}
-      </section>
+        </div>
 
-      {/* ⭐ 하단 문구 수정 반영 (MASL & SYNC) */}
-      <div className="mt-32 mb-10 text-center select-none">
-        <div className="inline-block px-8 py-2 bg-gray-100 rounded-full mb-4 shadow-inner border border-gray-200">
-          <p className="text-[0.6rem] font-black text-gray-400 uppercase tracking-[0.4em]">
-            Official Sports Platform
-          </p>
+        {/* 🔥 TOURNAMENT */}
+        <div>
+          <h2 className="text-xl font-black italic mb-6 tracking-[0.1em]">
+            남자축구 <span className="text-cyan-300">토너먼트</span>
+          </h2>
+
+          <div className="flex min-h-[420px] items-center justify-center rounded-[32px] border border-cyan-400/10 bg-white/[0.045] backdrop-blur-xl">
+            <div className="text-center">
+              <div className="mb-4 text-5xl">🏟️</div>
+              <p className="font-black italic text-white/70">
+                BRACKET UPDATE NEEDED
+              </p>
+              <p className="text-sm text-white/40 mt-2">
+                대진표 사전 업데이트 예정
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="opacity-10 font-black text-6xl md:text-8xl italic tracking-tighter text-gray-900 leading-none">
-          MASL <span className="text-blue-600">&</span> SYNC
-        </div>
+
       </div>
     </div>
   );
