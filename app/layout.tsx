@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/Navbar"; // 1. 여기서 한 번만 불러오기!
+import Navbar from "./components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,20 +26,34 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col bg-gray-50 text-black">
-        {/* 2. 상단 바 배치 */}
-        <Navbar />
+      <body className="min-h-full flex flex-col bg-[#040b16] text-white antialiased">
+        <div className="relative flex min-h-screen flex-col overflow-hidden">
+          {/* 배경 글로우 */}
+          <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.10),transparent_24%),radial-gradient(circle_at_top_right,rgba(190,242,100,0.08),transparent_20%),radial-gradient(circle_at_bottom,rgba(56,189,248,0.10),transparent_28%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
+          <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
-        {/* 상단 바 높이만큼 여백 주며 본문 표시 */}
-        <main className="flex-grow pt-20">
-          {children}
-        </main>
+          {/* 상단 바 */}
+          <Navbar />
 
-        <footer className="py-6 text-center text-gray-400 text-sm border-t border-gray-100 bg-white">
-          © 2026 MASL / GVR. All rights reserved.
-        </footer>
+          {/* 본문 */}
+          <main className="flex-1 pt-20">
+            {children}
+          </main>
+
+          {/* 푸터 */}
+          <footer className="border-t border-cyan-300/10 bg-[#07111d]/80 backdrop-blur-md">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 text-sm">
+              <p className="tracking-[0.25em] uppercase text-white/35">
+                © 2026 MASL / SYNC
+              </p>
+              <p className="text-cyan-300/55">
+                All rights reserved.
+              </p>
+            </div>
+          </footer>
+        </div>
       </body>
     </html>
   );
