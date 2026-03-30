@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-// 경로가 꼬인다면 '../../../../../../../lib/supabase'로 수정해 보세요!
 import { supabase } from '@/lib/supabase';
 
 interface PlayerPageProps {
@@ -13,7 +12,6 @@ interface PlayerPageProps {
 }
 
 export default function PlayerDetailPage({ params }: PlayerPageProps) {
-  // team 페이지에서 해결했던 방식 그대로 use()를 사용합니다.
   const resolvedParams = use(params);
   const teamName = decodeURIComponent(resolvedParams.teamName);
   const playerId = resolvedParams.playerId;
@@ -26,7 +24,7 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
 
     const fetchPlayer = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('players')
         .select('*')
         .eq('id', playerId)
@@ -52,7 +50,6 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
   return (
     <div className="min-h-screen bg-white pb-20 pt-32 px-6 text-black font-sans">
       <div className="max-w-4xl mx-auto">
-        {/* 뒤로가기: 팀 페이지로 이동 */}
         <Link 
           href={`/masl/26s/team/${encodeURIComponent(teamName)}`} 
           className="text-[0.6rem] font-black text-blue-600 uppercase tracking-[0.3em] mb-8 inline-block hover:opacity-50 transition-opacity"
@@ -62,7 +59,6 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
 
         {player ? (
           <div className="grid md:grid-cols-2 gap-16 mt-10">
-            {/* 왼쪽: 선수 사진 섹션 */}
             <div className="aspect-[3/4] rounded-[3.5rem] bg-gray-50 overflow-hidden border border-gray-100 shadow-2xl relative">
               {player.photo_url ? (
                 <img src={player.photo_url} className="w-full h-full object-cover" alt={player.name} />
@@ -76,7 +72,6 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
               </div>
             </div>
 
-            {/* 오른쪽: 선수 프로필 정보 */}
             <div className="flex flex-col justify-center">
               <h1 className="text-8xl font-black italic tracking-tighter uppercase mb-2 leading-none break-all">
                 {player.name}
@@ -91,8 +86,9 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
                 
                 <div className="grid grid-cols-2 gap-8">
                   <div>
-                    <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Position</p>
-                    <p className="text-xl font-black italic uppercase">{player.position || 'PLAYER'}</p>
+                    <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Category</p>
+                    {/* position 대신 DB 컬럼인 category 사용 */}
+                    <p className="text-xl font-black italic uppercase">{player.category || 'PLAYER'}</p>
                   </div>
                   <div>
                     <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Status</p>
@@ -101,7 +97,6 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
                 </div>
               </div>
 
-              {/* 하단 장식 요소 */}
               <div className="mt-20 opacity-20 font-black text-4xl italic tracking-tighter select-none pointer-events-none">
                 MASL <span className="text-blue-600">&</span> SYNC
               </div>
