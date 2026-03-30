@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #040b16;
+  --foreground: #f4fbff;
+
+  --navy-950: #040b16;
+  --navy-900: #06101f;
+  --navy-800: #081426;
+  --navy-700: #0c1c33;
+
+  --neon-cyan: #67e8f9;
+  --neon-sky: #38bdf8;
+  --neon-lime: #bef264;
+  --neon-green: #7cffb2;
+
+  --muted: rgba(255, 255, 255, 0.64);
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --panel: rgba(255, 255, 255, 0.05);
+  --panel-strong: rgba(255, 255, 255, 0.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  margin: 0;
   color: var(--foreground);
+  background:
+    radial-gradient(circle at top left, rgba(103, 232, 249, 0.10), transparent 24%),
+    radial-gradient(circle at top right, rgba(190, 242, 100, 0.08), transparent 20%),
+    radial-gradient(circle at bottom, rgba(56, 189, 248, 0.10), transparent 28%),
+    linear-gradient(180deg, #040b16 0%, #06101f 45%, #081426 100%);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* selection */
+::selection {
+  background: rgba(103, 232, 249, 0.28);
+  color: white;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(103, 232, 249, 0.8), rgba(190, 242, 100, 0.8));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(103, 232, 249, 1), rgba(190, 242, 100, 1));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* neon helpers */
+.neon-text {
+  text-shadow:
+    0 0 8px rgba(103, 232, 249, 0.35),
+    0 0 24px rgba(103, 232, 249, 0.16);
+}
+
+.neon-border {
+  border: 1px solid rgba(103, 232, 249, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 0 24px rgba(103, 232, 249, 0.08);
+}
+
+.neon-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.035)
+  );
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(103, 232, 249, 0.12);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25),
+    0 0 32px rgba(103, 232, 249, 0.05);
+}
+
+.neon-button {
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-lime));
+  color: #03101b;
+  font-weight: 800;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 0 24px rgba(103, 232, 249, 0.24);
+}
+
+.neon-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 0 30px rgba(124, 255, 178, 0.22);
+}
+
+.neon-button:active {
+  transform: scale(0.985);
+}
+
+.grid-bg {
+  position: relative;
+}
+
+.grid-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.08;
+}
+
+/* links */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* inputs */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  outline: none;
+}
+
+/* optional glass card baseline */
+.glass-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.28),
+    0 0 20px rgba(103, 232, 249, 0.05);
 }

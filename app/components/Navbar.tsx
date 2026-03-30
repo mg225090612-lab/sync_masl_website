@@ -4,48 +4,69 @@ import Link from 'next/link';
 
 export default function Navbar() {
   return (
-    <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 z-[100] px-6 py-4 flex justify-between items-center shadow-sm text-black font-sans">
-      {/* 좌측 로고 */}
-      <Link href="/" className="text-2xl font-black text-blue-600 tracking-tighter hover:opacity-80 transition-opacity">
-        MASL / GVR
-      </Link>
+    <nav className="fixed top-0 w-full z-[100] border-b border-cyan-300/10 bg-[#06101f]/72 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <Link
+          href="/"
+          className="text-2xl font-black tracking-[-0.04em] text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-lime-300 hover:opacity-90 transition"
+        >
+          MASL / GVR
+        </Link>
 
-      {/* 우측 메뉴 세트 */}
-      <div className="flex gap-8 font-bold text-gray-600 text-sm items-center">
-        
-        {/* MASL 메뉴 */}
-        <div className="group relative py-1 cursor-pointer hover:text-blue-600 transition-colors">
-          <span>MASL</span>
-          {/* 하단 팝업과의 연결 다리 (Invisible Bridge) */}
-          <div className="absolute top-full left-0 w-full h-4 bg-transparent"></div>
-          
-          <div className="absolute hidden group-hover:block bg-white border border-gray-100 shadow-2xl rounded-2xl p-2 w-48 mt-4 -left-12 animate-in fade-in slide-in-from-top-1">
-            <p className="p-3 text-[0.6rem] font-black text-gray-300 px-4 uppercase tracking-[0.2em]">Active Season</p>
-            <Link href="/masl/26s" className="block p-4 bg-blue-50 text-blue-600 rounded-xl font-black transition-all hover:bg-blue-100">
-              26 Spring
-            </Link>
+        <div className="flex items-center gap-8 text-sm font-bold">
+          <div className="group relative">
+            <span className="cursor-pointer text-white/70 transition hover:text-cyan-300">
+              MASL
+            </span>
+            <div className="absolute left-0 top-full h-4 w-full bg-transparent" />
+            <div className="absolute -left-8 mt-4 hidden w-52 rounded-2xl border border-cyan-300/10 bg-[#081426]/95 p-2 shadow-[0_0_30px_rgba(34,211,238,0.14)] backdrop-blur-xl group-hover:block">
+              <p className="px-4 pb-2 pt-3 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300/45">
+                Active Season
+              </p>
+              <Link
+                href="/masl/26s"
+                className="block rounded-xl border border-cyan-300/10 bg-cyan-300/10 px-4 py-3 font-black text-cyan-200 transition hover:bg-cyan-300/18"
+              >
+                26 Spring
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* GVR 메뉴 */}
-        <div className="group relative py-1 cursor-pointer hover:text-blue-600 transition-colors">
-          <span>GVR</span>
-          {/* 하단 팝업과의 연결 다리 (Invisible Bridge) */}
-          <div className="absolute top-full left-0 w-full h-4 bg-transparent"></div>
-          
-          <div className="absolute hidden group-hover:block bg-white border border-gray-100 shadow-2xl rounded-2xl p-2 w-48 mt-4 -left-12 animate-in fade-in slide-in-from-top-1">
-            <Link href="/gvr/rate" className="block p-3 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors font-black">
-              Rate (평가하기)
-            </Link>
-            <Link href="/gvr/view" className="block p-3 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors font-black">
-              View (결과조회)
-            </Link>
+          <div className="group relative">
+            <span className="cursor-pointer text-white/70 transition hover:text-lime-300">
+              GVR
+            </span>
+            <div className="absolute left-0 top-full h-4 w-full bg-transparent" />
+            <div className="absolute -left-8 mt-4 hidden w-52 rounded-2xl border border-cyan-300/10 bg-[#081426]/95 p-2 shadow-[0_0_30px_rgba(34,211,238,0.14)] backdrop-blur-xl group-hover:block">
+              <Link
+                href="/gvr/rate"
+                className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200"
+              >
+                Rate
+              </Link>
+              <Link
+                href="/gvr/view"
+                className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200"
+              >
+                View
+              </Link>
+            </div>
           </div>
-        </div>
 
-        <Link href="/champions" className="hover:text-blue-600 transition-colors">Champions</Link>
-        <button className="opacity-20 cursor-not-allowed">Predictions</button>
+          <Link
+            href="/champions"
+            className="text-white/80 transition hover:text-cyan-300"
+          >
+            Champions
+          </Link>
+
+          <button className="cursor-not-allowed text-white/20">
+            Predictions
+          </button>
+        </div>
       </div>
+
+      <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-cyan-300/20 to-lime-300/20" />
     </nav>
   );
 }
