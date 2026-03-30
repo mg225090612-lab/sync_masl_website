@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
 interface PlayerPageProps {
-  params: Promise<{ 
-    teamName: string; 
-    playerId: string; 
-  }>;
+  params: Promise<{ teamName: string; playerId: string }>;
 }
 
 export default function PlayerDetailPage({ params }: PlayerPageProps) {
@@ -17,96 +14,96 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
   const playerId = resolvedParams.playerId;
 
   const [player, setPlayer] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!playerId) return;
-
-    const fetchPlayer = async () => {
-      setLoading(true);
+    const fetch = async () => {
       const { data } = await supabase
         .from('players')
         .select('*')
         .eq('id', playerId)
         .single();
-      
+
       if (data) setPlayer(data);
-      setLoading(false);
     };
 
-    fetchPlayer();
+    fetch();
   }, [playerId]);
 
-  if (loading) {
+  if (!player) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="font-black italic text-gray-200 animate-pulse text-4xl uppercase tracking-widest">
-          Loading Player...
+      <div className="min-h-screen flex items-center justify-center bg-[#06101f] text-white">
+        <p className="text-4xl font-black italic animate-pulse">
+          LOADING PLAYER...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20 pt-32 px-6 text-black font-sans">
-      <div className="max-w-4xl mx-auto">
-        <Link 
-          href={`/masl/26s/team/${encodeURIComponent(teamName)}`} 
-          className="text-[0.6rem] font-black text-blue-600 uppercase tracking-[0.3em] mb-8 inline-block hover:opacity-50 transition-opacity"
+    <div className="relative min-h-screen bg-[#06101f] pt-32 px-6 pb-20 text-white">
+
+      <div className="max-w-5xl mx-auto">
+
+        <Link
+          href={`/masl/26s/team/${encodeURIComponent(teamName)}`}
+          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block"
         >
-          ← Back to Team
+          ← BACK TO TEAM
         </Link>
 
-        {player ? (
-          <div className="grid md:grid-cols-2 gap-16 mt-10">
-            <div className="aspect-[3/4] rounded-[3.5rem] bg-gray-50 overflow-hidden border border-gray-100 shadow-2xl relative">
-              {player.photo_url ? (
-                <img src={player.photo_url} className="w-full h-full object-cover" alt={player.name} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-9xl opacity-10 font-black italic text-gray-400">
-                  {player.player_number}
-                </div>
-              )}
-              <div className="absolute top-8 left-8 bg-black text-white px-6 py-2 rounded-full font-black italic text-xl shadow-xl">
-                NO.{player.player_number}
-              </div>
-            </div>
+        <div className="grid md:grid-cols-2 gap-16">
 
-            <div className="flex flex-col justify-center">
-              <h1 className="text-8xl font-black italic tracking-tighter uppercase mb-2 leading-none break-all">
-                {player.name}
-              </h1>
-              <div className="h-2 w-24 bg-blue-600 mb-10"></div>
-              
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Affiliation</p>
-                  <p className="text-2xl font-black italic uppercase tracking-tight">{player.team_name}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-8">
-                  <div>
-                    <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Category</p>
-                    {/* position 대신 DB 컬럼인 category 사용 */}
-                    <p className="text-xl font-black italic uppercase">{player.category || 'PLAYER'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[0.6rem] font-black text-gray-300 uppercase tracking-widest mb-1">Status</p>
-                    <p className="text-xl font-black italic uppercase text-blue-600 animate-pulse">On Field</p>
-                  </div>
-                </div>
+          {/* IMAGE */}
+          <div className="rounded-3xl overflow-hidden border border-cyan-400/10 bg-white/[0.04]">
+            {player.photo_url ? (
+              <img src={player.photo_url} className="w-full h-full object-cover" />
+            ) : (
+              <div className="h-full flex items-center justify-center text-8xl opacity-20 font-black">
+                {player.player_number}
+              </div>
+            )}
+          </div>
+
+          {/* INFO */}
+          <div className="flex flex-col justify-center">
+
+            <h1 className="text-5xl md:text-7xl font-black italic mb-4">
+              {player.name}
+            </h1>
+
+            <div className="h-[3px] w-20 bg-gradient-to-r from-cyan-400 to-lime-400 mb-8" />
+
+            <div className="space-y-6">
+
+              <div>
+                <p className="text-xs text-cyan-300 uppercase tracking-widest">
+                  TEAM
+                </p>
+                <p className="text-xl font-black">{player.team_name}</p>
               </div>
 
-              <div className="mt-20 opacity-20 font-black text-4xl italic tracking-tighter select-none pointer-events-none">
-                MASL <span className="text-blue-600">&</span> SYNC
+              <div>
+                <p className="text-xs text-cyan-300 uppercase tracking-widest">
+                  CATEGORY
+                </p>
+                <p className="text-xl font-black">
+                  {player.category || 'PLAYER'}
+                </p>
               </div>
+
+              <div>
+                <p className="text-xs text-cyan-300 uppercase tracking-widest">
+                  NUMBER
+                </p>
+                <p className="text-xl font-black">
+                  #{player.player_number}
+                </p>
+              </div>
+
             </div>
+
           </div>
-        ) : (
-          <div className="py-40 text-center">
-            <p className="text-gray-200 font-black italic text-2xl uppercase">Player Not Found</p>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
