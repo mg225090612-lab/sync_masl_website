@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-// 경로가 꼬인다면 '../../../lib/supabase'로 바꿔보세요!
 import { supabase } from '@/lib/supabase'; 
 
 export default function Masl26sPage() {
@@ -14,15 +13,13 @@ export default function Masl26sPage() {
   useEffect(() => {
     const loadHubData = async () => {
       setLoading(true);
-      
-      // players 테이블에서 선택된 종목의 team_name들만 가져오기
-      const { data, error } = await supabase
+      // DB 컬럼명 확인: sport_type 혹은 category
+      const { data } = await supabase
         .from('players')
         .select('team_name')
         .eq('sport_type', activeTab);
 
       if (data) {
-        // 중복 제거하여 깔끔한 팀 이름 리스트 생성
         const uniqueTeams = Array.from(new Set(data.map(p => p.team_name)));
         setTeams(uniqueTeams as string[]);
       }
@@ -33,13 +30,11 @@ export default function Masl26sPage() {
 
   return (
     <div className="min-h-screen bg-white pb-20 pt-32 px-6 font-sans text-black">
-      {/* 제목 섹션 */}
       <div className="max-w-5xl mx-auto mb-16">
         <h1 className="text-7xl font-black italic tracking-tighter mb-4 uppercase leading-none">
           26 <span className="text-blue-600">Spring</span> Hub
         </h1>
         
-        {/* 종목 선택 탭 (가로 스크롤 가능) */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 border-b border-gray-100">
           {sports.map(s => (
             <button 
@@ -55,8 +50,46 @@ export default function Masl26sPage() {
         </div>
       </div>
 
+      {/* 🔥 Upcoming Match 섹션 추가 */}
+      <div className="max-w-5xl mx-auto mb-16">
+        <h3 className="text-xl font-black italic uppercase tracking-widest text-gray-300 mb-6">Upcoming Match</h3>
+        <div className="relative aspect-[21/9] rounded-[3rem] overflow-hidden shadow-2xl bg-gray-900 group">
+          {/* 배너 배경 사진 */}
+          <img 
+            src="/images/match_260404_1.png" 
+            alt="Match Background" 
+            className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700"
+          />
+          
+          <div className="absolute inset-0 flex items-center justify-around px-10">
+            {/* 왼쪽 팀 (클릭 시 이동) */}
+            <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="flex flex-col items-center group/team">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/20 group-hover/team:border-blue-600 transition-all shadow-xl mb-4">
+                <img src="/teams/김영준에게 축구를 배우다.jpg" alt="Home Team" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-white font-black italic text-xl md:text-2xl uppercase tracking-tighter">Barsat</span>
+            </Link>
+
+            {/* 중간 VS 표시 */}
+            <div className="flex flex-col items-center">
+              <span className="text-5xl md:text-7xl font-black italic text-blue-600 drop-shadow-2xl">VS</span>
+              <div className="mt-4 px-4 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                <p className="text-[0.6rem] text-white font-black uppercase tracking-widest text-center">March 31 / 18:00</p>
+              </div>
+            </div>
+
+            {/* 오른쪽 팀 (클릭 시 이동) */}
+            <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="flex flex-col items-center group/team">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/20 group-hover/team:border-blue-600 transition-all shadow-xl mb-4">
+                <img src="/teams/빵빵이의 축구교실.jpg" alt="Away Team" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-white font-black italic text-xl md:text-2xl uppercase tracking-tighter">Okji FC</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto grid lg:grid-cols-3 gap-12">
-        {/* 왼쪽: 대진표 (Tournament Bracket) */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-black italic uppercase tracking-widest text-gray-300">Tournament Bracket</h3>
@@ -67,7 +100,6 @@ export default function Masl26sPage() {
           </div>
         </div>
 
-        {/* 오른쪽: 팀 리스트 (Participating Teams) */}
         <div className="space-y-4">
           <h3 className="text-xl font-black mb-6 italic uppercase tracking-widest">Participating Teams</h3>
           {loading ? (
@@ -89,7 +121,6 @@ export default function Masl26sPage() {
         </div>
       </div>
 
-      {/* 하단 로고 로고 */}
       <div className="mt-40 text-center opacity-10 font-black text-6xl italic tracking-tighter select-none">
         MASL <span className="text-blue-600">&</span> SYNC
       </div>
