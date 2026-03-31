@@ -62,12 +62,12 @@ export default function HomePage() {
       <div className="mx-auto max-w-6xl relative z-10">
         <div className="mb-20 animate-in fade-in slide-in-from-top-6 duration-700">
           <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-            MASL 26 SPRING HUB
+            Mungyeong Amateur Sports League
           </div>
           <div className="mt-8">
             <h1 className="text-7xl md:text-[10rem] font-black italic tracking-[-0.06em] leading-[0.85] uppercase">
               <span className="text-white block">MASL</span>
-              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent italic">SEASON 26</span>
+              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent italic">26 SUMMER</span>
             </h1>
             <div className="mt-10 h-[5px] w-40 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_30px_rgba(34,211,238,0.8)] rounded-full" />
           </div>
@@ -75,8 +75,8 @@ export default function HomePage() {
 
         <div className="mb-24 relative z-0 space-y-12">
           <div className="space-y-2">
-            <p className="text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Matches / Live Event</p>
-            <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">Main Events</h2>
+            <p className="text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Live Event</p>
+            <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">Upcoming Matches</h2>
           </div>
 
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
@@ -115,7 +115,7 @@ export default function HomePage() {
               </div>
               <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                 <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
-                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 11 / 17:00 KST</p>
+                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:00 KST</p>
                 </div>
               </div>
             </div>
