@@ -50,12 +50,12 @@ export default function Masl26sPage() {
     loadHubData();
   }, [activeTab]);
 
-  // 경기 필터링 (match_order 기준 정렬)
+  // 경기 필터링
   const semis = matches.filter(m => m.round === 4);
   const semi1 = semis.find(m => m.match_order === 1) || null;
   const semi2 = semis.find(m => m.match_order === 2) || null;
   const finalMatch = matches.find(m => m.round === 2) || null;
-  const championName = finalMatch?.winnder_id || null;
+  const championName = finalMatch?.winnder_id || null; // DB 오타(winnder_id) 반영
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans">
@@ -115,10 +115,10 @@ export default function Masl26sPage() {
 
         <div className="grid lg:grid-cols-12 gap-16">
           
-          {/* LEFT COL (Bracket takes main stage) */}
+          {/* LEFT COL (Bracket) */}
           <div className="lg:col-span-8 space-y-16">
             
-            {/* 🏆 TOURNAMENT BRACKET (가로형 트리) */}
+            {/* 🏆 TOURNAMENT BRACKET (세로형 트리) */}
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white italic">Tournament Bracket</h3>
@@ -128,35 +128,40 @@ export default function Masl26sPage() {
                 </div>
               </div>
               
-              {/* 가로 스크롤 가능 컨테이너 */}
-              <div className="relative rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-x-auto shadow-inner p-10 py-16">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.03),transparent_70%)] pointer-events-none" />
+              <div className="relative rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl p-6 md:p-12 shadow-inner">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,255,255,0.03),transparent_70%)] pointer-events-none" />
                 
-                {/* 대진표 Flex 구조 */}
-                <div className="relative z-10 flex items-center justify-start min-w-[900px] h-full gap-0 font-sans">
+                {/* 💡 세로 정렬 레이아웃 */}
+                <div className="relative z-10 flex flex-col items-center w-full font-sans">
                   
-                  {/* 1. Semi-Finals */}
-                  <div className="flex flex-col gap-12 w-64 z-10">
+                  {/* 1. Semi-Finals (2열 배치) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full z-10">
                     <MatchCard match={semi1} label="Semi-Final 1" />
                     <MatchCard match={semi2} label="Semi-Final 2" />
                   </div>
 
-                  {/* 2. Semi -> Final 연결선 (ㄷ자 모양) */}
-                  <div className="w-12 h-[190px] border-r-2 border-y-2 border-white/10 rounded-r-2xl -ml-1 z-0"></div>
-                  <div className="w-12 border-b-2 border-white/10 z-0"></div>
+                  {/* 2. Semi -> Final 연결선 (모바일은 직선, 데스크탑은 U자형) */}
+                  <div className="hidden md:flex flex-col items-center w-full opacity-30">
+                    <div className="w-1/2 h-8 border-b-2 border-l-2 border-r-2 border-white/20 rounded-b-2xl"></div>
+                    <div className="h-8 border-l-2 border-white/20"></div>
+                  </div>
+                  {/* 모바일용 직선 연결선 */}
+                  <div className="flex md:hidden h-12 border-l-2 border-white/20 opacity-30"></div>
 
                   {/* 3. Final */}
-                  <div className="flex flex-col w-[17rem] z-10">
+                  <div className="w-full md:w-3/4 z-10">
                     <MatchCard match={finalMatch} label="The Grand Final" isFinal={true} />
                   </div>
 
-                  {/* 4. Final -> Champion 연결선 (점선) */}
-                  <div className="w-16 border-b-2 border-dashed border-cyan-400/40 z-0 relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
+                  {/* 4. Final -> Champion 연결선 (점선 화살표) */}
+                  <div className="flex flex-col items-center w-full opacity-80">
+                    <div className="h-12 border-l-2 border-dashed border-cyan-400/50 relative">
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
+                    </div>
                   </div>
 
-                  {/* 5. Champion */}
-                  <div className="flex flex-col w-56 pl-6 z-10">
+                  {/* 5. Champion (우승자) */}
+                  <div className="w-full md:w-2/3 z-10 mt-2">
                     <ChampionCard name={championName} />
                   </div>
 
@@ -206,14 +211,14 @@ export default function Masl26sPage() {
 }
 
 /* -------------------------------------------
-   서브 컴포넌트: 가로형 대진표 전용 UI
+   서브 컴포넌트: 세로형 대진표 전용 UI
 ------------------------------------------- */
 
 // 매치 박스 컴포넌트 (일반 라운드 / 결승 공통)
 function MatchCard({ match, label, isFinal = false }: { match: any; label: string; isFinal?: boolean }) {
   if (!match) {
     return (
-      <div className={`bg-white/5 p-5 rounded-3xl border border-dashed border-white/10 shadow-lg flex flex-col items-center justify-center h-[142px]`}>
+      <div className={`bg-white/5 p-6 rounded-3xl border border-dashed border-white/10 shadow-lg flex flex-col items-center justify-center min-h-[142px]`}>
         <p className="text-[10px] font-black text-white/20 tracking-[0.2em] uppercase mb-2">{label}</p>
         <p className="text-sm font-black italic text-white/10">TBD</p>
       </div>
@@ -224,16 +229,16 @@ function MatchCard({ match, label, isFinal = false }: { match: any; label: strin
   const isWinB = match.winnder_id === match.team_b;
 
   return (
-    <div className={`relative p-5 rounded-3xl border transition-all duration-300 shadow-xl h-[142px] flex flex-col justify-center ${
-      isFinal ? 'bg-[#0b1730]/90 border-cyan-400/50 shadow-[0_0_30px_rgba(34,211,238,0.15)] scale-105' : 'bg-white/5 border-white/5 hover:border-white/20'
+    <div className={`relative p-6 rounded-3xl border transition-all duration-300 shadow-xl flex flex-col justify-center min-h-[142px] ${
+      isFinal ? 'bg-[#0b1730]/90 border-cyan-400/50 shadow-[0_0_30px_rgba(34,211,238,0.15)] md:scale-105' : 'bg-white/5 border-white/5 hover:border-white/20'
     }`}>
       {/* 결승전일 때 뒷배경 빛 효과 */}
       {isFinal && match.winnder_id && <div className="absolute inset-0 bg-cyan-400/10 blur-xl animate-pulse rounded-3xl pointer-events-none" />}
       
-      <div className="relative z-10">
-        <p className={`text-[9px] font-black tracking-[0.2em] uppercase text-center mb-3 ${isFinal ? 'text-cyan-400' : 'text-white/30'}`}>{label}</p>
+      <div className="relative z-10 w-full">
+        <p className={`text-[9px] font-black tracking-[0.2em] uppercase text-center mb-4 ${isFinal ? 'text-cyan-400' : 'text-white/30'}`}>{label}</p>
         
-        <div className="space-y-3">
+        <div className="space-y-4">
           <TeamRow name={match.team_a} score={match.score_a} isWinner={isWinA} isFinal={isFinal} />
           <div className="h-[1px] w-full bg-white/5" />
           <TeamRow name={match.team_b} score={match.score_b} isWinner={isWinB} isFinal={isFinal} />
@@ -246,15 +251,15 @@ function MatchCard({ match, label, isFinal = false }: { match: any; label: strin
 // 매치 박스 내부의 팀 1줄
 function TeamRow({ name, score, isWinner, isFinal }: { name: string; score?: number; isWinner: boolean; isFinal: boolean }) {
   return (
-    <div className={`flex justify-between items-center transition-colors ${isWinner ? 'text-cyan-300' : 'text-white/40'}`}>
-      <div className="flex items-center gap-2">
-        <span className={`font-black italic uppercase truncate max-w-[120px] ${isFinal && isWinner ? 'text-base' : 'text-xs'}`}>
+    <div className={`flex justify-between items-center transition-colors w-full ${isWinner ? 'text-cyan-300' : 'text-white/40'}`}>
+      <div className="flex items-center gap-3">
+        <span className={`font-black italic uppercase truncate ${isFinal && isWinner ? 'text-base md:text-lg' : 'text-xs md:text-sm'}`}>
           {name || 'TBD'}
         </span>
         {isWinner && <span className="text-[8px] font-black bg-cyan-400/20 text-cyan-300 px-1.5 py-0.5 rounded-md border border-cyan-400/30">WIN</span>}
       </div>
       {score !== undefined && score !== null && (
-        <span className={`font-black italic ${isFinal && isWinner ? 'text-lime-300 text-lg' : 'text-sm'}`}>{score}</span>
+        <span className={`font-black italic ${isFinal && isWinner ? 'text-lime-300 text-lg md:text-xl' : 'text-sm md:text-base'}`}>{score}</span>
       )}
     </div>
   );
@@ -263,13 +268,13 @@ function TeamRow({ name, score, isWinner, isFinal }: { name: string; score?: num
 // 최종 우승자 노출용 박스
 function ChampionCard({ name }: { name: string | null }) {
   return (
-    <div className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] border-2 border-dashed transition-all duration-700 h-[160px] ${
-      name ? 'border-cyan-400 bg-gradient-to-t from-cyan-400/20 to-transparent shadow-[0_0_50px_rgba(34,211,238,0.3)] scale-110' : 'border-white/10 bg-white/5'
+    <div className={`flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-dashed transition-all duration-700 min-h-[160px] w-full ${
+      name ? 'border-cyan-400 bg-gradient-to-t from-cyan-400/20 to-transparent shadow-[0_0_50px_rgba(34,211,238,0.3)] md:scale-110' : 'border-white/10 bg-white/5'
     }`}>
       {name ? (
         <>
           <p className="text-cyan-400 font-black text-[11px] tracking-widest uppercase mb-3 animate-bounce">🏆 Champion</p>
-          <p className="text-2xl font-black italic uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-center leading-tight">
+          <p className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-center leading-tight">
             {name}
           </p>
         </>
