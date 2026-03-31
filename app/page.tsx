@@ -6,25 +6,25 @@ import Link from 'next/link';
 export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
-  // 스크린샷 기준 메뉴 구성
+  // 🌐 글로벌 네비게이션 메뉴 데이터
   const navMenus = [
     {
       title: 'MASL',
       path: '/',
-      sub: [{ name: '26 Spring', path: '/masl/26s' }]
+      sub: [{ name: '26 Spring Hub', path: '/masl/26s' }]
     },
     {
       title: 'GVR',
       path: '/gvr/rate',
       sub: [
-        { name: 'Rate', path: '/gvr/rate' },
-        { name: 'View', path: '/gvr/view' }
+        { name: 'Rate Players', path: '/gvr/rate' },
+        { name: 'View Results', path: '/gvr/view' }
       ]
     },
     {
       title: 'Champions',
       path: '/champions',
-      sub: [{ name: 'Tournament', path: '/champions/bracket' }]
+      sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }]
     },
     {
       title: 'Predictions',
@@ -36,7 +36,7 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans">
       
-      {/* 🌐 TOP NAVIGATION (스크린샷 스타일 반영) */}
+      {/* 🌐 TOP NAVIGATION BAR (스크린샷 스타일 완벽 반영) */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex h-20 items-center justify-start gap-12">
@@ -53,21 +53,19 @@ export default function HomePage() {
                   {menu.title}
                 </button>
 
-                {/* 드롭다운 서브 메뉴 (스크린샷 투명 박스 스타일) */}
-                <div className={`absolute left-0 top-[80%] w-48 overflow-hidden rounded-2xl border border-white/10 bg-[#0b1730]/90 p-2 shadow-2xl backdrop-blur-2xl transition-all duration-300 ${
+                {/* 드롭다운 서브 메뉴 박스 */}
+                <div className={`absolute left-0 top-[85%] w-52 overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl transition-all duration-300 ${
                   activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'
                 }`}>
-                  {/* 스크린샷의 'ACTIVE SEASON' 같은 헤더 (선택 사항) */}
                   {menu.title === 'MASL' && (
-                    <div className="px-4 py-2 text-[9px] font-black tracking-[0.2em] text-cyan-400/50 uppercase">Active Season</div>
+                    <div className="px-4 py-2 text-[9px] font-black tracking-[0.2em] text-cyan-400/40 uppercase border-b border-white/5 mb-1">Active Season</div>
                   )}
-                  
                   <div className="flex flex-col gap-1">
                     {menu.sub.map((s) => (
                       <Link 
                         key={s.name} 
                         href={s.path}
-                        className="rounded-xl px-4 py-3 text-xs font-bold text-white transition-all hover:bg-cyan-400/10 hover:text-cyan-300"
+                        className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight"
                       >
                         {s.name}
                       </Link>
@@ -80,67 +78,79 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* 🔥 사이버틱 배경 레이어 */}
+      {/* 🔥 배경 레이어 (그라데이션 + 그리드 패턴) */}
       <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
       <div className="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl relative z-10">
+        
         {/* 🚀 헤더 섹션 */}
-        <div className="mb-16">
-          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.25em] text-cyan-300">
+        <div className="mb-20 animate-in fade-in slide-in-from-top-6 duration-700">
+          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
             MASL 26 SPRING HUB
           </div>
-          <div className="mt-6">
-            <h1 className="text-6xl md:text-9xl font-black italic tracking-[-0.05em] leading-none uppercase">
-              <span className="text-white">Sports </span>
-              <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">Platform</span>
+          <div className="mt-8">
+            <h1 className="text-7xl md:text-[10rem] font-black italic tracking-[-0.06em] leading-[0.85] uppercase">
+              <span className="text-white block">Sports</span>
+              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent">Platform</span>
             </h1>
-            <div className="mt-6 h-[4px] w-32 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_25px_rgba(34,211,238,0.6)]" />
+            <div className="mt-10 h-[5px] w-40 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_30px_rgba(34,211,238,0.8)] rounded-full" />
           </div>
         </div>
 
-        {/* 🏟️ UPCOMING MATCH (투명 로고 버전) */}
-        <div className="mb-20">
-          <p className="mb-6 text-[10px] font-black tracking-[0.4em] text-cyan-400/60 uppercase">Upcoming Match / Live Event</p>
-          <div className="relative overflow-hidden rounded-[50px] border border-white/5 bg-black/40 shadow-2xl">
-            <div className="relative aspect-[21/9] w-full flex items-center justify-center">
-              <img src="/images/match_bg.png" alt="Match BG" className="absolute inset-0 h-full w-full object-cover opacity-20" />
-              <div className="relative z-10 flex w-full items-center justify-around px-6 md:px-20">
-                <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="group transition-all duration-500 hover:scale-110">
-                  <div className="h-40 w-40 md:h-72 md:w-72 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    <img src="/teams/빵빵이의 축구교실.png" alt="Team Left" className="h-full w-full object-contain filter brightness-125 group-hover:drop-shadow-[0_0_40px_rgba(34,211,238,0.7)]" />
-                  </div>
+{/* 🏟️ UPCOMING MATCH (VS 제거 및 날짜 하단 배치) */}
+        <div className="mb-24">
+          <p className="mb-6 text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Match / Live Event</p>
+
+          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group">
+            <div className="relative flex flex-col items-center py-12 md:py-20">
+              {/* 배경 이미지 */}
+              <img src="/images/match_bg.png" alt="BG" className="absolute inset-0 h-full w-full object-cover opacity-20 transition-transform duration-[2s] group-hover:scale-110" />
+              
+              {/* 팀 로고 레이아웃 (VS 삭제) */}
+              <div className="relative z-10 flex w-full items-center justify-center gap-12 md:gap-32 px-6">
+                <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="transition-all duration-500 hover:scale-110 active:scale-95">
+                  <img src="/teams/김영준에게 축구를 배우다.png" className="h-44 w-44 md:h-80 md:w-80 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Team A" />
                 </Link>
 
-                <div className="flex flex-col items-center">
-                  <span className="text-6xl md:text-9xl font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white to-white/10 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">VS</span>
-                  <div className="mt-6 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-6 py-2 backdrop-blur-2xl text-cyan-300 text-[10px] font-black tracking-[0.4em] uppercase">March 31 / 18:00</div>
+                <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="transition-all duration-500 hover:scale-110 active:scale-95">
+                  <img src="/teams/빵빵이의 축구교실.png" className="h-44 w-44 md:h-80 md:w-80 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Team B" />
+                </Link>
+              </div>
+
+              {/* 경기 날짜 하단 배치 */}
+              <div className="relative z-10 mt-12 md:mt-16">
+                <div className="rounded-full border border-white/10 bg-white/5 px-10 py-3 backdrop-blur-3xl shadow-xl">
+                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:30 KST</p>
                 </div>
-
-                <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="group transition-all duration-500 hover:scale-110">
-                  <div className="h-40 w-40 md:h-72 md:w-72 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    <img src="/teams/김영준에게 축구를 배우다.png" alt="Team Right" className="h-full w-full object-contain filter brightness-125 group-hover:drop-shadow-[0_0_40px_rgba(57,255,20,0.7)]" />
-                  </div>
-                </Link>
               </div>
             </div>
           </div>
         </div>
-
         {/* 🏆 TOURNAMENT BRACKET */}
-        <div className="mb-20">
-          <h2 className="text-2xl font-black italic mb-8 tracking-[0.15em] uppercase text-white">Tournament <span className="text-cyan-300">Bracket</span></h2>
-          <div className="relative min-h-[500px] flex items-center justify-center rounded-[50px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-inner">
+        <div className="mb-24">
+          <h2 className="text-3xl font-black italic mb-10 tracking-[0.2em] uppercase">
+            Tournament <span className="text-cyan-300">Bracket</span>
+          </h2>
+
+          <div className="relative min-h-[550px] flex items-center justify-center rounded-[60px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl shadow-inner transition-all hover:bg-white/[0.04] group/bracket">
+             <div className="absolute inset-0 overflow-hidden rounded-[60px] opacity-10 group-hover/bracket:opacity-20 transition-opacity">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.3),transparent_70%)]" />
+             </div>
              <div className="relative text-center">
-              <div className="mb-6 text-7xl animate-bounce">⚽</div>
-              <p className="text-2xl font-black italic text-white/80 tracking-widest uppercase">Bracket Updating...</p>
-              <p className="text-sm text-white/30 mt-3 font-medium uppercase tracking-[0.2em]">Pre-Tournament Data Processing</p>
+              <div className="mb-8 text-8xl animate-bounce">⚽</div>
+              <p className="text-3xl font-black italic text-white/90 tracking-widest uppercase">
+                BRACKET UPDATING...
+              </p>
+              <p className="text-sm text-white/30 mt-4 font-black uppercase tracking-[0.3em] italic">
+                Pre-Tournament Data Processing
+              </p>
             </div>
           </div>
         </div>
 
-        {/* 🏢 FOOTER 로고 */}
-        <div className="mt-40 text-center opacity-10 font-black text-7xl italic tracking-tighter select-none">
+        {/* 🏢 FOOTER */}
+        <div className="mt-60 text-center opacity-10 font-black text-8xl italic tracking-tighter select-none">
           MASL <span className="text-cyan-400">&</span> SYNC
         </div>
 
