@@ -98,42 +98,42 @@ export default function HomePage() {
           </div>
         </div>
 
-{/* 🏟️ UPCOMING MATCH (로고 크기 2배 확대 및 위치 대폭 조정) */}
+{/* 🏟️ UPCOMING MATCH (로고 크기 및 위치 살짝 조정) */}
         <div className="mb-24 relative z-0">
           <p className="mb-6 text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Match / Live Event</p>
 
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
             {/* 배경 이미지 */}
-            <img src="/images/match_bg.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-10 transition-transform duration-[2s] group-hover:scale-110" />
+            <img src="/images/match_bg.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-15 transition-transform duration-[2s] group-hover:scale-110" />
             
             {/* 컨텐츠 레이어 (absolute positioning 사용) */}
             <div className="relative z-10 h-full w-full">
               
-              {/* 왼쪽 팀 (김영준에게 축구를 배우다) - 훨씬 크게, 왼쪽 끝 근처 배치 */}
-              <div className="absolute left-[12.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] aspect-square flex items-center justify-center pointer-events-none">
+              {/* 왼쪽 팀 (김영준에게 축구를 배우다) - 크기 살짝 줄이고, 중앙 쪽으로 살짝 이동 */}
+              <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center pointer-events-none">
                 <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
                   <img 
                     src="/teams/김영준에게 축구를 배우다.png" 
-                    className="w-full h-full object-contain filter brightness-110 opacity-90 drop-shadow-[0_0_80px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_120px_rgba(57,255,20,0.4)] transition-all" 
+                    className="w-full h-full object-contain filter brightness-110 opacity-95 drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_90px_rgba(57,255,20,0.5)] transition-all" 
                     alt="Team Left" 
                   />
                 </Link>
               </div>
 
-              {/* 오른쪽 팀 (빵빵이의 축구교실) - 훨씬 크게, 오른쪽 끝에 가깝게 배치 */}
-              <div className="absolute left-[90%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] aspect-square flex items-center justify-center pointer-events-none">
+              {/* 오른쪽 팀 (빵빵이의 축구교실) - 크기 살짝 줄이고, 중앙 쪽으로 살짝 이동 */}
+              <div className="absolute left-3/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center pointer-events-none">
                 <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
                   <img 
                     src="/teams/빵빵이의 축구교실.png" 
-                    className="w-full h-full object-contain filter brightness-110 opacity-90 drop-shadow-[0_0_80px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_120px_rgba(34,211,238,0.4)] transition-all" 
+                    className="w-full h-full object-contain filter brightness-110 opacity-95 drop-shadow-[0_0_50px_rgba(255,255,255,0.1)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" 
                     alt="Team Right" 
                   />
                 </Link>
               </div>
 
-              {/* 경기 날짜 하단 중앙 배치 (커진 로고 위에 표시되도록 z-index 및 배경 조정) */}
-              <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-                <div className="rounded-full border border-cyan-400/20 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] pointer-events-auto">
+              {/* 경기 날짜 하단 중앙 배치 (z-index 및 배경 조정) */}
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="rounded-full border border-cyan-400/10 bg-[#06101f]/90 px-12 py-3.5 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] pointer-events-auto">
                   <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:30 KST</p>
                 </div>
               </div>
