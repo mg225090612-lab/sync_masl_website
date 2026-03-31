@@ -11,7 +11,7 @@ export default function Masl26sPage() {
   const sports: SportTab[] = ["남자축구", "여자축구", "남자농구", "여자배구"];
   const [activeTab, setActiveTab] = useState<SportTab>("남자축구");
   const [teams, setTeams] = useState<string[]>([]);
-  const [matches, setMatches] = useState<any[]>([]); // 💡 추가된 경기 데이터
+  const [matches, setMatches] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
 
   const navMenus = [
@@ -32,13 +32,11 @@ export default function Masl26sPage() {
   useEffect(() => {
     const loadHubData = async () => {
       setLoading(true);
-      // 1. 팀 목록
       const { data: teamData } = await supabase.from('players').select('team_name').eq('category', activeTab);
       if (teamData) {
         setTeams(Array.from(new Set(teamData.map(p => p.team_name))));
       }
 
-      // 2. 대진표 데이터 (4강 -> 결승 순서)
       const { data: matchData } = await supabase
         .from('matches')
         .select('*')
@@ -52,13 +50,17 @@ export default function Masl26sPage() {
     loadHubData();
   }, [activeTab]);
 
-  // 라운드별 경기 필터링
-  const getMatchesByRound = (round: number) => matches.filter(m => m.round === round);
+  // 경기 필터링 (match_order 기준 정렬)
+  const semis = matches.filter(m => m.round === 4);
+  const semi1 = semis.find(m => m.match_order === 1) || null;
+  const semi2 = semis.find(m => m.match_order === 2) || null;
+  const finalMatch = matches.find(m => m.round === 2) || null;
+  const championName = finalMatch?.winnder_id || null;
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans">
       
-      {/* 🌐 NAV BAR (기존 다크테마 + 로그인 버튼) */}
+      {/* 🌐 NAV BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 md:px-6 h-20 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-12">
@@ -70,9 +72,7 @@ export default function Masl26sPage() {
                 <div className={`absolute left-0 top-[85%] w-52 overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
                   <div className="flex flex-col gap-1">
                     {menu.sub.map((s) => (
-                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">
-                        {s.name}
-                      </Link>
+                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">{s.name}</Link>
                     ))}
                   </div>
                 </div>
@@ -115,84 +115,51 @@ export default function Masl26sPage() {
 
         <div className="grid lg:grid-cols-12 gap-16">
           
-          {/* LEFT COL */}
+          {/* LEFT COL (Bracket takes main stage) */}
           <div className="lg:col-span-8 space-y-16">
             
-            {/* 🏟️ UPCOMING MATCH */}
-            <div>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400/50 mb-8 italic">Upcoming Match</h3>
-              <div className="relative aspect-[21/9] rounded-[3rem] overflow-hidden border border-white/5 bg-black/40 group shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                <img src="/images/match_bg_1.png" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-[2s]" />
-                <div className="relative z-10 h-full flex items-center justify-around px-10">
-                  <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="group/team flex flex-col items-center hover:scale-105 transition-transform">
-                    <img src="/teams/김영준에게 축구를 배우다.png" className="w-24 md:w-32 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" />
-                  </Link>
-                  <span className="text-5xl md:text-7xl font-black italic text-cyan-400 drop-shadow-lg">VS</span>
-                  <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="group/team flex flex-col items-center hover:scale-105 transition-transform">
-                    <img src="/teams/빵빵이의 축구교실.png" className="w-24 md:w-32 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* 🏆 TOURNAMENT BRACKET (DB 연동 + 자동 렌더링) */}
+            {/* 🏆 TOURNAMENT BRACKET (가로형 트리) */}
             <div>
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 italic">Tournament Bracket</h3>
+                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white italic">Tournament Bracket</h3>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest italic">Live Updates</span>
+                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest italic">Live Sync</span>
                 </div>
               </div>
               
-              <div className="relative min-h-[500px] rounded-[50px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-x-auto shadow-inner p-10 md:p-14">
+              {/* 가로 스크롤 가능 컨테이너 */}
+              <div className="relative rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-x-auto shadow-inner p-10 py-16">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.03),transparent_70%)] pointer-events-none" />
                 
-                <div className="relative z-10 grid grid-cols-2 gap-10 min-w-[600px] h-full">
-                  {/* Semi-Finals (Round 4) */}
-                  <div className="flex flex-col justify-around gap-8">
-                    <p className="text-[10px] font-black text-cyan-400/50 tracking-[0.3em] uppercase text-center">Semi-Finals</p>
-                    {getMatchesByRound(4).map((match) => (
-                      <div key={match.id} className="bg-white/5 p-6 rounded-[2rem] border border-white/5 shadow-lg space-y-4 relative">
-                        {/* winnder_id는 DB 오타 그대로 사용 */}
-                        <TeamRow name={match.team_a} score={match.score_a} isWinner={match.winnder_id === match.team_a} />
-                        <div className="h-[1px] bg-white/5" />
-                        <TeamRow name={match.team_b} score={match.score_b} isWinner={match.winnder_id === match.team_b} />
-                      </div>
-                    ))}
-                    {getMatchesByRound(4).length === 0 && (
-                      <div className="text-center py-20 text-white/20 font-black italic text-xs tracking-widest border border-dashed border-white/10 rounded-[2rem]">
-                        TBD
-                      </div>
-                    )}
+                {/* 대진표 Flex 구조 */}
+                <div className="relative z-10 flex items-center justify-start min-w-[900px] h-full gap-0 font-sans">
+                  
+                  {/* 1. Semi-Finals */}
+                  <div className="flex flex-col gap-12 w-64 z-10">
+                    <MatchCard match={semi1} label="Semi-Final 1" />
+                    <MatchCard match={semi2} label="Semi-Final 2" />
                   </div>
 
-                  {/* Finals (Round 2) */}
-                  <div className="flex flex-col justify-center">
-                    <p className="text-[10px] font-black text-lime-400 tracking-[0.3em] uppercase text-center mb-6">The Grand Final</p>
-                    {getMatchesByRound(2).map((match) => (
-                      <div key={match.id} className="relative group">
-                        {/* 💡 우승자 빛나는 효과 */}
-                        {match.winnder_id && (
-                          <div className="absolute inset-0 bg-cyan-400/20 blur-[50px] animate-pulse rounded-full" />
-                        )}
-                        <div className={`relative bg-[#0b1730]/80 p-10 rounded-[3rem] border-2 transition-all duration-500 backdrop-blur-md ${
-                          match.winnder_id ? 'border-cyan-400 shadow-[0_0_50px_rgba(34,211,238,0.3)] scale-105' : 'border-white/10'
-                        }`}>
-                          <div className="space-y-6 text-center">
-                            <FinalTeam name={match.team_a} score={match.score_a} isWinner={match.winnder_id === match.team_a} />
-                            <span className="block text-3xl font-black italic text-white/10">VS</span>
-                            <FinalTeam name={match.team_b} score={match.score_b} isWinner={match.winnder_id === match.team_b} />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {getMatchesByRound(2).length === 0 && (
-                      <div className="text-center py-20 text-white/20 font-black italic text-xs tracking-widest border border-dashed border-white/10 rounded-[3rem]">
-                        FINAL MATCH TBD
-                      </div>
-                    )}
+                  {/* 2. Semi -> Final 연결선 (ㄷ자 모양) */}
+                  <div className="w-12 h-[190px] border-r-2 border-y-2 border-white/10 rounded-r-2xl -ml-1 z-0"></div>
+                  <div className="w-12 border-b-2 border-white/10 z-0"></div>
+
+                  {/* 3. Final */}
+                  <div className="flex flex-col w-[17rem] z-10">
+                    <MatchCard match={finalMatch} label="The Grand Final" isFinal={true} />
                   </div>
+
+                  {/* 4. Final -> Champion 연결선 (점선) */}
+                  <div className="w-16 border-b-2 border-dashed border-cyan-400/40 z-0 relative">
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2 h-2 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
+                  </div>
+
+                  {/* 5. Champion */}
+                  <div className="flex flex-col w-56 pl-6 z-10">
+                    <ChampionCard name={championName} />
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -204,16 +171,16 @@ export default function Masl26sPage() {
               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-8 italic">Participating Teams</h3>
               <div className="space-y-4">
                 {loading ? (
-                  <div className="py-10 text-center font-black italic text-cyan-300/30 animate-pulse text-xs tracking-widest uppercase">Fetching {activeTab} Teams...</div>
+                  <div className="py-10 text-center font-black italic text-cyan-300/30 animate-pulse text-xs tracking-widest uppercase">Fetching {activeTab}...</div>
                 ) : (
                   teams.map(name => (
                     <Link href={`/masl/26s/team/${encodeURIComponent(name)}`} key={name} className="block group">
                       <div className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.03] backdrop-blur-xl transition-all duration-300 group-hover:border-cyan-400/40 group-hover:bg-white/5 flex justify-between items-center shadow-lg">
-                        <div className="flex items-center gap-5">
+                        <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center font-black italic text-cyan-400 group-hover:bg-cyan-400 group-hover:text-black transition-colors text-sm">
                             {name.charAt(0)}
                           </div>
-                          <span className="font-black italic uppercase tracking-tighter text-lg group-hover:text-cyan-300 transition-colors">{name}</span>
+                          <span className="font-black italic uppercase text-sm truncate max-w-[150px] group-hover:text-cyan-300 transition-colors">{name}</span>
                         </div>
                         <span className="w-8 h-8 flex-shrink-0 rounded-full bg-white/5 flex items-center justify-center text-[10px] group-hover:bg-cyan-400 group-hover:text-black transition-all">→</span>
                       </div>
@@ -238,34 +205,80 @@ export default function Masl26sPage() {
   );
 }
 
-// 서브 컴포넌트: 4강 팀 표시
-function TeamRow({ name, score, isWinner }: { name: string; score?: number; isWinner: boolean }) {
+/* -------------------------------------------
+   서브 컴포넌트: 가로형 대진표 전용 UI
+------------------------------------------- */
+
+// 매치 박스 컴포넌트 (일반 라운드 / 결승 공통)
+function MatchCard({ match, label, isFinal = false }: { match: any; label: string; isFinal?: boolean }) {
+  if (!match) {
+    return (
+      <div className={`bg-white/5 p-5 rounded-3xl border border-dashed border-white/10 shadow-lg flex flex-col items-center justify-center h-[142px]`}>
+        <p className="text-[10px] font-black text-white/20 tracking-[0.2em] uppercase mb-2">{label}</p>
+        <p className="text-sm font-black italic text-white/10">TBD</p>
+      </div>
+    );
+  }
+
+  const isWinA = match.winnder_id === match.team_a;
+  const isWinB = match.winnder_id === match.team_b;
+
   return (
-    <div className={`flex justify-between items-center transition-all ${isWinner ? 'text-cyan-300' : 'text-white/40'}`}>
-      <div className="flex items-center gap-3">
-        <span className="font-black italic text-sm uppercase">{name || 'TBD'}</span>
-        {isWinner && <span className="text-[8px] font-black bg-cyan-400/20 text-cyan-300 px-2 py-1 rounded-full border border-cyan-400/30">WIN</span>}
+    <div className={`relative p-5 rounded-3xl border transition-all duration-300 shadow-xl h-[142px] flex flex-col justify-center ${
+      isFinal ? 'bg-[#0b1730]/90 border-cyan-400/50 shadow-[0_0_30px_rgba(34,211,238,0.15)] scale-105' : 'bg-white/5 border-white/5 hover:border-white/20'
+    }`}>
+      {/* 결승전일 때 뒷배경 빛 효과 */}
+      {isFinal && match.winnder_id && <div className="absolute inset-0 bg-cyan-400/10 blur-xl animate-pulse rounded-3xl pointer-events-none" />}
+      
+      <div className="relative z-10">
+        <p className={`text-[9px] font-black tracking-[0.2em] uppercase text-center mb-3 ${isFinal ? 'text-cyan-400' : 'text-white/30'}`}>{label}</p>
+        
+        <div className="space-y-3">
+          <TeamRow name={match.team_a} score={match.score_a} isWinner={isWinA} isFinal={isFinal} />
+          <div className="h-[1px] w-full bg-white/5" />
+          <TeamRow name={match.team_b} score={match.score_b} isWinner={isWinB} isFinal={isFinal} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 매치 박스 내부의 팀 1줄
+function TeamRow({ name, score, isWinner, isFinal }: { name: string; score?: number; isWinner: boolean; isFinal: boolean }) {
+  return (
+    <div className={`flex justify-between items-center transition-colors ${isWinner ? 'text-cyan-300' : 'text-white/40'}`}>
+      <div className="flex items-center gap-2">
+        <span className={`font-black italic uppercase truncate max-w-[120px] ${isFinal && isWinner ? 'text-base' : 'text-xs'}`}>
+          {name || 'TBD'}
+        </span>
+        {isWinner && <span className="text-[8px] font-black bg-cyan-400/20 text-cyan-300 px-1.5 py-0.5 rounded-md border border-cyan-400/30">WIN</span>}
       </div>
       {score !== undefined && score !== null && (
-        <span className="font-black italic text-lg">{score}</span>
+        <span className={`font-black italic ${isFinal && isWinner ? 'text-lime-300 text-lg' : 'text-sm'}`}>{score}</span>
       )}
     </div>
   );
 }
 
-// 서브 컴포넌트: 결승전 팀 표시 (우승자 화려하게)
-function FinalTeam({ name, score, isWinner }: { name: string; score?: number; isWinner: boolean }) {
+// 최종 우승자 노출용 박스
+function ChampionCard({ name }: { name: string | null }) {
   return (
-    <div className={`transition-all duration-700 flex flex-col items-center gap-2 ${isWinner ? 'scale-110' : name && isWinner === false ? 'opacity-30 filter grayscale' : ''}`}>
-      {isWinner && <p className="text-cyan-400 font-black text-[10px] tracking-widest animate-bounce">🏆 CHAMPION</p>}
-      <div className="flex items-center gap-4">
-        <p className={`text-2xl md:text-3xl font-black italic uppercase tracking-tighter ${isWinner ? 'text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]' : 'text-white'}`}>
-          {name || 'TBD'}
-        </p>
-        {score !== undefined && score !== null && (
-          <span className={`text-3xl font-black italic ${isWinner ? 'text-lime-300' : 'text-white/50'}`}>{score}</span>
-        )}
-      </div>
+    <div className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] border-2 border-dashed transition-all duration-700 h-[160px] ${
+      name ? 'border-cyan-400 bg-gradient-to-t from-cyan-400/20 to-transparent shadow-[0_0_50px_rgba(34,211,238,0.3)] scale-110' : 'border-white/10 bg-white/5'
+    }`}>
+      {name ? (
+        <>
+          <p className="text-cyan-400 font-black text-[11px] tracking-widest uppercase mb-3 animate-bounce">🏆 Champion</p>
+          <p className="text-2xl font-black italic uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-center leading-tight">
+            {name}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-[10px] font-black text-white/20 tracking-[0.2em] uppercase mb-2">Champion</p>
+          <p className="text-xl font-black italic text-white/10">TBD</p>
+        </>
+      )}
     </div>
   );
 }
