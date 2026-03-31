@@ -13,12 +13,23 @@ export default function Masl26sPage() {
   const [teams, setTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 글로벌 내비게이션
+  // 🌐 글로벌 내비게이션 (Predictions 제거)
   const navMenus = [
     { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
     { title: 'GVR', path: '/gvr/rate', sub: [{ name: 'Rate Players', path: '/gvr/rate' }, { name: 'View Results', path: '/gvr/view' }] },
     { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] },
   ];
+
+  // 🔐 구글 로그인 핸들러 추가
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) alert('로그인 에러: ' + error.message);
+  };
 
   // DB에서 해당 종목의 팀 리스트 로드
   useEffect(() => {
@@ -43,23 +54,33 @@ export default function Masl26sPage() {
       
       {/* 🌐 글로벌 내비게이션 바 */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl px-6 flex h-20 items-center justify-start gap-12">
-          {navMenus.map((menu) => (
-            <div key={menu.title} className="relative group py-7" onMouseEnter={() => setActiveMenu(menu.title)} onMouseLeave={() => setActiveMenu(null)}>
-              <button className={`text-sm font-black tracking-widest transition-all uppercase ${activeMenu === menu.title ? 'text-cyan-400' : 'text-white/40 group-hover:text-white'}`}>
-                {menu.title}
-              </button>
-              <div className={`absolute left-0 top-[85%] w-52 rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
-                <div className="flex flex-col gap-1">
-                  {menu.sub.map((s) => (
-                    <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white hover:bg-cyan-400/10 hover:text-cyan-300 uppercase">
-                      {s.name}
-                    </Link>
-                  ))}
+        <div className="mx-auto max-w-6xl px-6 flex h-20 items-center justify-between">
+          <div className="flex items-center gap-12">
+            {navMenus.map((menu) => (
+              <div key={menu.title} className="relative group py-7" onMouseEnter={() => setActiveMenu(menu.title)} onMouseLeave={() => setActiveMenu(null)}>
+                <button className={`text-sm font-black tracking-widest transition-all uppercase ${activeMenu === menu.title ? 'text-cyan-400' : 'text-white/40 group-hover:text-white'}`}>
+                  {menu.title}
+                </button>
+                <div className={`absolute left-0 top-[85%] w-52 rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
+                  <div className="flex flex-col gap-1">
+                    {menu.sub.map((s) => (
+                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white hover:bg-cyan-400/10 hover:text-cyan-300 uppercase">
+                        {s.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* 💡 추가된 로그인 버튼 (메인 페이지와 동일 디자인) */}
+          <button 
+            onClick={handleGoogleLogin}
+            className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-[11px] font-black tracking-widest text-white/80 transition-all hover:bg-white/10 hover:text-cyan-300 uppercase"
+          >
+            Sign In
+          </button>
         </div>
       </nav>
 
@@ -78,7 +99,7 @@ export default function Masl26sPage() {
             Spring <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">Hub</span>
           </h1>
 
-          {/* 종목 선택 탭 (남자축구, 여자축구, 남자농구, 여자배구) */}
+          {/* 종목 선택 탭 */}
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-8 border-b border-white/5">
             {sports.map(s => (
               <button 
@@ -94,8 +115,8 @@ export default function Masl26sPage() {
           </div>
         </div>
 
+        {/* ... (이하 대진표 및 팀 리스트 로직은 기존과 동일) */}
         <div className="grid lg:grid-cols-12 gap-16">
-          {/* 🏆 메인 섹션: 토너먼트 대진표 결과 */}
           <div className="lg:col-span-8 space-y-12">
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400/50 italic">{activeTab} Tournament Bracket</h3>
@@ -108,7 +129,6 @@ export default function Masl26sPage() {
             <div className="relative min-h-[600px] rounded-[60px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl overflow-hidden shadow-inner flex flex-col items-center justify-center group">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.03),transparent_70%)]"></div>
               
-              {/* 대진표 데이터 영역 */}
               <div className="relative z-10 text-center px-10">
                 <div className="mb-8 text-8xl transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 select-none opacity-20">⚽</div>
                 <h4 className="text-4xl font-black italic tracking-widest uppercase mb-4 text-white/80">{activeTab} 대진표 준비 중</h4>
@@ -125,7 +145,6 @@ export default function Masl26sPage() {
             </div>
           </div>
 
-          {/* 👥 사이드바: 종목별 참여 팀 리스트 */}
           <aside className="lg:col-span-4 space-y-10">
             <div>
               <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-8 italic">Participating Teams</h3>
@@ -147,17 +166,11 @@ export default function Masl26sPage() {
                     </Link>
                   ))
                 )}
-                {!loading && teams.length === 0 && (
-                  <div className="py-10 text-center border border-dashed border-white/5 rounded-[2rem]">
-                    <p className="text-[10px] font-black text-white/10 uppercase tracking-widest italic">No Data Found</p>
-                  </div>
-                )}
               </div>
             </div>
           </aside>
         </div>
 
-        {/* 하단 로고 */}
         <div className="mt-40 text-center opacity-10 font-black text-7xl italic tracking-tighter select-none">
           MASL <span className="text-cyan-400">&</span> SYNC
         </div>
