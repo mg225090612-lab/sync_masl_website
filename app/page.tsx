@@ -103,7 +103,7 @@ export default function HomePage() {
 
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
             {/* 💡 match_bg 이미지 투명도를 60%(0.6)로 상향하여 훨씬 진하게 배경 표시 */}
-            <img src="/images/match_bg.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            <img src="/images/match_bg_1.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
             
             <div className="relative z-10 h-full w-full">
               {/* 왼쪽 팀 (크기 확대 유지) */}
