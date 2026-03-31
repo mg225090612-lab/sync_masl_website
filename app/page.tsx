@@ -97,15 +97,17 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 🏟️ UPCOMING MATCH (팀 위치 변경) */}
-        <div className="mb-24 relative z-0">
-          <p className="mb-6 text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Match / Live Event</p>
+        {/* 🏟️ UPCOMING MATCHES SECTION */}
+        <div className="mb-24 relative z-0 space-y-12">
+          <p className="mb-6 text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Matches / Live Events</p>
 
+          {/* 🏟️ 1. 남자축구 경기 (기존 유지) */}
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
-            <img src="/images/match_bg_1.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            {/* 💡 match_bg_1 이미지 투명도를 60%(0.6)로 상향하여 훨씬 진하게 배경 표시 */}
+            <img src="/images/match_bg_1.png" alt="Match Background 1" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
             
             <div className="relative z-10 h-full w-full">
-              {/* 💡 왼쪽 팀: 빵빵이의 축구교실 (기존 오른쪽 위치의 설정을 왼쪽 비율에 맞춰 적용) */}
+              {/* 왼쪽 팀 (빵빵이 - 위치 유지) */}
               <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center pointer-events-none">
                 <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
                   <img 
@@ -116,7 +118,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              {/* 💡 오른쪽 팀: 김영준에게 축구를 배우다 (기존 왼쪽 위치의 설정을 오른쪽 비율에 맞춰 적용) */}
+              {/* 오른쪽 팀 (김영준 - 위치 유지) */}
               <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center pointer-events-none">
                 <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
                   <img 
@@ -131,6 +133,43 @@ export default function HomePage() {
               <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                 <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)] pointer-events-auto">
                   <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:30 KST</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 🏟️ 2. 여자축구 경기 (신규 추가) */}
+          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
+            {/* 💡 match_bg_2 이미지 적용 및 진하게 표시 */}
+            <img src="/images/match_bg_2.png" alt="Match Background 2" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            
+            <div className="relative z-10 h-full w-full">
+              {/* 왼쪽 팀: 옥지의 축구교실 (빵빵이와 동일 사이즈/위치 설정) */}
+              <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center pointer-events-none">
+                <Link href={`/masl/26s/team/${encodeURIComponent("옥지의 축구교실")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img 
+                    src="/teams/옥지의 축구교실.png" 
+                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" 
+                    alt="Team Left (Okji)" 
+                  />
+                </Link>
+              </div>
+
+              {/* 오른쪽 팀: 바르셨노라 (김영준과 동일 사이즈/위치 설정) */}
+              <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center pointer-events-none">
+                <Link href={`/masl/26s/team/${encodeURIComponent("바르셨노라")}`} className="block w-full h-full pointer-events-auto transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img 
+                    src="/teams/바르셨노라.png" 
+                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" 
+                    alt="Team Right (Barsyeotnora)" 
+                  />
+                </Link>
+              </div>
+
+              {/* 경기 날짜 (동일 유지) */}
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)] pointer-events-auto">
+                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 11 / 17:00 KST</p>
                 </div>
               </div>
             </div>
