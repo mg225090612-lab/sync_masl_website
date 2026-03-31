@@ -139,7 +139,7 @@ export default function Masl26sPage() {
                     <ChampionCard name={championName} />
                   </div>
 
-                  {/* 2. Final -> Champion 연결선 (점선 화살표 위로 향함) */}
+                  {/* 2. Final -> Champion 연결선 */}
                   <div className="flex flex-col items-center w-full opacity-80">
                     <div className="h-12 border-l-2 border-dashed border-cyan-400/50 relative">
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
@@ -151,7 +151,7 @@ export default function Masl26sPage() {
                     <MatchCard match={finalMatch} label="The Grand Final" isFinal={true} />
                   </div>
 
-                  {/* 4. Semi -> Final 연결선 (모바일은 직선, 데스크탑은 역 U자형) */}
+                  {/* 4. Semi -> Final 연결선 */}
                   <div className="hidden md:flex flex-col items-center w-full opacity-30">
                     <div className="h-8 border-l-2 border-white/20"></div>
                     <div className="w-1/2 h-8 border-t-2 border-l-2 border-r-2 border-white/20 rounded-t-2xl"></div>
@@ -209,10 +209,6 @@ export default function Masl26sPage() {
     </div>
   );
 }
-
-/* -------------------------------------------
-   서브 컴포넌트: 상향식 세로형 대진표 전용 UI
-------------------------------------------- */
 
 // 매치 박스 컴포넌트 (일반 라운드 / 결승 공통)
 function MatchCard({ match, label, isFinal = false }: { match: any; label: string; isFinal?: boolean }) {

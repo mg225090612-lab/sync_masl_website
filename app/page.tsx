@@ -1,23 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
-type SportTab = '남자축구' | '여자축구' | '남자농구' | '여자배구';
-
-export default function Masl26sPage() {
+export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const sports: SportTab[] = ["남자축구", "여자축구", "남자농구", "여자배구"];
-  const [activeTab, setActiveTab] = useState<SportTab>("남자축구");
-  const [teams, setTeams] = useState<string[]>([]);
-  const [matches, setMatches] = useState<any[]>([]); 
-  const [loading, setLoading] = useState(true);
 
   const navMenus = [
     { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
     { title: 'GVR', path: '/gvr/rate', sub: [{ name: 'Rate Players', path: '/gvr/rate' }, { name: 'View Results', path: '/gvr/view' }] },
-    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] },
+    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] }
   ];
 
   const handleGoogleLogin = async () => {
@@ -29,38 +22,10 @@ export default function Masl26sPage() {
     if (error) alert('로그인 에러: ' + error.message);
   };
 
-  useEffect(() => {
-    const loadHubData = async () => {
-      setLoading(true);
-      const { data: teamData } = await supabase.from('players').select('team_name').eq('category', activeTab);
-      if (teamData) {
-        setTeams(Array.from(new Set(teamData.map(p => p.team_name))));
-      }
-
-      const { data: matchData } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('sport_type', activeTab)
-        .order('round', { ascending: false })
-        .order('match_order', { ascending: true });
-
-      setMatches(matchData || []);
-      setLoading(false);
-    };
-    loadHubData();
-  }, [activeTab]);
-
-  // 경기 필터링
-  const semis = matches.filter(m => m.round === 4);
-  const semi1 = semis.find(m => m.match_order === 1) || null;
-  const semi2 = semis.find(m => m.match_order === 2) || null;
-  const finalMatch = matches.find(m => m.round === 2) || null;
-  const championName = finalMatch?.winnder_id || null; // DB 오타(winnder_id) 반영
-
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans">
       
-      {/* 🌐 NAV BAR */}
+      {/* 🌐 TOP NAVIGATION BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 md:px-6 h-20 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-12">
@@ -70,9 +35,14 @@ export default function Masl26sPage() {
                   {menu.title}
                 </button>
                 <div className={`absolute left-0 top-[85%] w-52 overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
+                  {menu.title === 'MASL' && (
+                    <div className="px-4 py-2 text-[9px] font-black tracking-[0.2em] text-cyan-400/40 uppercase border-b border-white/5 mb-1">Active Season</div>
+                  )}
                   <div className="flex flex-col gap-1">
                     {menu.sub.map((s) => (
-                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">{s.name}</Link>
+                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">
+                        {s.name}
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -86,204 +56,76 @@ export default function Masl26sPage() {
       </nav>
 
       {/* 🔥 BACKGROUND LAYER */}
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
       <div className="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
       <div className="mx-auto max-w-6xl relative z-10">
-        
-        {/* HEADER */}
-        <div className="mb-20">
-          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-cyan-300 mb-8 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-            MASL SEASON 26 SPRING
+        <div className="mb-20 animate-in fade-in slide-in-from-top-6 duration-700">
+          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+            MASL 26 SPRING HUB
           </div>
-          <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase mb-16">
-            Spring <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">Hub</span>
-          </h1>
-
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-8 border-b border-white/5">
-            {sports.map(s => (
-              <button key={s} onClick={() => setActiveTab(s)}
-                className={`px-10 py-4 rounded-full text-xs font-black tracking-widest transition-all whitespace-nowrap ${
-                  activeTab === s ? 'bg-cyan-400 text-black shadow-[0_0_30px_rgba(34,211,238,0.5)] scale-105' : 'bg-white/5 text-white/40 hover:bg-white/10'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+          <div className="mt-8">
+            <h1 className="text-7xl md:text-[10rem] font-black italic tracking-[-0.06em] leading-[0.85] uppercase">
+              <span className="text-white block">MASL</span>
+              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent italic">SEASON 26</span>
+            </h1>
+            <div className="mt-10 h-[5px] w-40 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_30px_rgba(34,211,238,0.8)] rounded-full" />
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-16">
-          
-          {/* LEFT COL (Bracket) */}
-          <div className="lg:col-span-8 space-y-16">
-            
-            {/* 🏆 TOURNAMENT BRACKET (역방향 세로 트리) */}
-            <div>
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white italic">Tournament Bracket</h3>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest italic">Live Sync</span>
-                </div>
+        <div className="mb-24 relative z-0 space-y-12">
+          <div className="space-y-2">
+            <p className="text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Matches / Live Event</p>
+            <h2 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white">Main Events</h2>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
+            <img src="/images/match_bg_1.png" alt="Match Background 1" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            <div className="relative z-10 h-full w-full">
+              <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img src="/teams/빵빵이의 축구교실.png" className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" alt="Team Left" />
+                </Link>
               </div>
-              
-              <div className="relative rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl p-6 md:p-12 shadow-inner">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,255,255,0.03),transparent_70%)] pointer-events-none" />
-                
-                {/* 💡 세로 정렬 레이아웃 (아래에서 위로) */}
-                <div className="relative z-10 flex flex-col items-center w-full font-sans">
-                  
-                  {/* 1. Champion (우승자 - 최상단) */}
-                  <div className="w-full md:w-2/3 z-10 mb-2">
-                    <ChampionCard name={championName} />
-                  </div>
-
-                  {/* 2. Final -> Champion 연결선 (점선 화살표 위로 향함) */}
-                  <div className="flex flex-col items-center w-full opacity-80">
-                    <div className="h-12 border-l-2 border-dashed border-cyan-400/50 relative">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
-                    </div>
-                  </div>
-
-                  {/* 3. Final */}
-                  <div className="w-full md:w-3/4 z-10">
-                    <MatchCard match={finalMatch} label="The Grand Final" isFinal={true} />
-                  </div>
-
-                  {/* 4. Semi -> Final 연결선 (모바일은 직선, 데스크탑은 역 U자형) */}
-                  <div className="hidden md:flex flex-col items-center w-full opacity-30">
-                    <div className="h-8 border-l-2 border-white/20"></div>
-                    <div className="w-1/2 h-8 border-t-2 border-l-2 border-r-2 border-white/20 rounded-t-2xl"></div>
-                  </div>
-                  {/* 모바일용 직선 연결선 */}
-                  <div className="flex md:hidden h-12 border-l-2 border-white/20 opacity-30"></div>
-
-                  {/* 5. Semi-Finals (2열 배치 - 최하단) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full z-10">
-                    <MatchCard match={semi1} label="Semi-Final 1" />
-                    <MatchCard match={semi2} label="Semi-Final 2" />
-                  </div>
-
+              <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img src="/teams/김영준에게 축구를 배우다.png" className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" alt="Team Right" />
+                </Link>
+              </div>
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
+                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:30 KST</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 👥 RIGHT COL (Sidebar) */}
-          <aside className="lg:col-span-4 space-y-10">
-            <div>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-8 italic">Participating Teams</h3>
-              <div className="space-y-4">
-                {loading ? (
-                  <div className="py-10 text-center font-black italic text-cyan-300/30 animate-pulse text-xs tracking-widest uppercase">Fetching {activeTab}...</div>
-                ) : (
-                  teams.map(name => (
-                    <Link href={`/masl/26s/team/${encodeURIComponent(name)}`} key={name} className="block group">
-                      <div className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.03] backdrop-blur-xl transition-all duration-300 group-hover:border-cyan-400/40 group-hover:bg-white/5 flex justify-between items-center shadow-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center font-black italic text-cyan-400 group-hover:bg-cyan-400 group-hover:text-black transition-colors text-sm">
-                            {name.charAt(0)}
-                          </div>
-                          <span className="font-black italic uppercase text-sm truncate max-w-[150px] group-hover:text-cyan-300 transition-colors">{name}</span>
-                        </div>
-                        <span className="w-8 h-8 flex-shrink-0 rounded-full bg-white/5 flex items-center justify-center text-[10px] group-hover:bg-cyan-400 group-hover:text-black transition-all">→</span>
-                      </div>
-                    </Link>
-                  ))
-                )}
-                {!loading && teams.length === 0 && (
-                  <div className="py-10 text-center border border-dashed border-white/5 rounded-[2rem]">
-                    <p className="text-[10px] font-black text-white/10 uppercase tracking-widest italic">No Data Found</p>
-                  </div>
-                )}
+          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
+            <img src="/images/match_bg_2.png" alt="Match Background 2" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            <div className="relative z-10 h-full w-full">
+              <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("옥지의 축구교실")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img src="/teams/옥지의 축구교실.png" className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" alt="Team Left" />
+                </Link>
+              </div>
+              <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("바르셨노라")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
+                  <img src="/teams/바르셨노라.png" className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" alt="Team Right" />
+                </Link>
+              </div>
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
+                  <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 11 / 17:00 KST</p>
+                </div>
               </div>
             </div>
-          </aside>
+          </div>
         </div>
 
-        <div className="mt-40 text-center opacity-10 font-black text-7xl italic tracking-tighter select-none">
-          MASL <span className="text-cyan-400">&</span> SYNC
+        <div className="mt-60 text-center opacity-10 font-black text-8xl italic tracking-tighter select-none relative z-10 uppercase">
+          Masl & Sync
         </div>
       </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------
-   서브 컴포넌트: 상향식 세로형 대진표 전용 UI
-------------------------------------------- */
-
-// 매치 박스 컴포넌트 (일반 라운드 / 결승 공통)
-function MatchCard({ match, label, isFinal = false }: { match: any; label: string; isFinal?: boolean }) {
-  if (!match) {
-    return (
-      <div className={`bg-white/5 p-6 rounded-3xl border border-dashed border-white/10 shadow-lg flex flex-col items-center justify-center min-h-[142px]`}>
-        <p className="text-[10px] font-black text-white/20 tracking-[0.2em] uppercase mb-2">{label}</p>
-        <p className="text-sm font-black italic text-white/10">TBD</p>
-      </div>
-    );
-  }
-
-  const isWinA = match.winnder_id === match.team_a;
-  const isWinB = match.winnder_id === match.team_b;
-
-  return (
-    <div className={`relative p-6 rounded-3xl border transition-all duration-300 shadow-xl flex flex-col justify-center min-h-[142px] ${
-      isFinal ? 'bg-[#0b1730]/90 border-cyan-400/50 shadow-[0_0_30px_rgba(34,211,238,0.15)] md:scale-105' : 'bg-white/5 border-white/5 hover:border-white/20'
-    }`}>
-      {/* 결승전일 때 뒷배경 빛 효과 */}
-      {isFinal && match.winnder_id && <div className="absolute inset-0 bg-cyan-400/10 blur-xl animate-pulse rounded-3xl pointer-events-none" />}
-      
-      <div className="relative z-10 w-full">
-        <p className={`text-[9px] font-black tracking-[0.2em] uppercase text-center mb-4 ${isFinal ? 'text-cyan-400' : 'text-white/30'}`}>{label}</p>
-        
-        <div className="space-y-4">
-          <TeamRow name={match.team_a} score={match.score_a} isWinner={isWinA} isFinal={isFinal} />
-          <div className="h-[1px] w-full bg-white/5" />
-          <TeamRow name={match.team_b} score={match.score_b} isWinner={isWinB} isFinal={isFinal} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// 매치 박스 내부의 팀 1줄
-function TeamRow({ name, score, isWinner, isFinal }: { name: string; score?: number; isWinner: boolean; isFinal: boolean }) {
-  return (
-    <div className={`flex justify-between items-center transition-colors w-full ${isWinner ? 'text-cyan-300' : 'text-white/40'}`}>
-      <div className="flex items-center gap-3">
-        <span className={`font-black italic uppercase truncate ${isFinal && isWinner ? 'text-base md:text-lg' : 'text-xs md:text-sm'}`}>
-          {name || 'TBD'}
-        </span>
-        {isWinner && <span className="text-[8px] font-black bg-cyan-400/20 text-cyan-300 px-1.5 py-0.5 rounded-md border border-cyan-400/30">WIN</span>}
-      </div>
-      {score !== undefined && score !== null && (
-        <span className={`font-black italic ${isFinal && isWinner ? 'text-lime-300 text-lg md:text-xl' : 'text-sm md:text-base'}`}>{score}</span>
-      )}
-    </div>
-  );
-}
-
-// 최종 우승자 노출용 박스
-function ChampionCard({ name }: { name: string | null }) {
-  return (
-    <div className={`flex flex-col items-center justify-center p-8 rounded-[2.5rem] border-2 border-dashed transition-all duration-700 min-h-[160px] w-full ${
-      name ? 'border-cyan-400 bg-gradient-to-t from-cyan-400/20 to-transparent shadow-[0_0_50px_rgba(34,211,238,0.3)] md:scale-110' : 'border-white/10 bg-white/5'
-    }`}>
-      {name ? (
-        <>
-          <p className="text-cyan-400 font-black text-[11px] tracking-widest uppercase mb-3 animate-bounce">🏆 Champion</p>
-          <p className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] text-center leading-tight">
-            {name}
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-[10px] font-black text-white/20 tracking-[0.2em] uppercase mb-2">Champion</p>
-          <p className="text-xl font-black italic text-white/10">TBD</p>
-        </>
-      )}
     </div>
   );
 }
