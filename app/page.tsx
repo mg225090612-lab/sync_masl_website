@@ -98,35 +98,50 @@ export default function HomePage() {
           </div>
         </div>
 
-{/* 🏟️ UPCOMING MATCH (VS 제거 및 날짜 하단 배치) */}
+{/* 🏟️ UPCOMING MATCH (로고 크기 및 위치 대폭 조정) */}
         <div className="mb-24">
           <p className="mb-6 text-[11px] font-black tracking-[0.5em] text-cyan-400/50 uppercase italic">Upcoming Match / Live Event</p>
 
-          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group">
-            <div className="relative flex flex-col items-center py-12 md:py-20">
-              {/* 배경 이미지 */}
-              <img src="/images/match_bg.png" alt="BG" className="absolute inset-0 h-full w-full object-cover opacity-20 transition-transform duration-[2s] group-hover:scale-110" />
+          <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
+            {/* 배경 이미지 */}
+            <img src="/images/match_bg.png" alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-20 transition-transform duration-[2s] group-hover:scale-110" />
+            
+            {/* 컨텐츠 레이어 (flex layout 제거하고 absolute positioning 사용) */}
+            <div className="relative z-10 h-full w-full">
               
-              {/* 팀 로고 레이아웃 (VS 삭제) */}
-              <div className="relative z-10 flex w-full items-center justify-center gap-12 md:gap-32 px-6">
-                <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="transition-all duration-500 hover:scale-110 active:scale-95">
-                  <img src="/teams/김영준에게 축구를 배우다.png" className="h-44 w-44 md:h-80 md:w-80 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Team A" />
-                </Link>
-
-                <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="transition-all duration-500 hover:scale-110 active:scale-95">
-                  <img src="/teams/빵빵이의 축구교실.png" className="h-44 w-44 md:h-80 md:w-80 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]" alt="Team B" />
+              {/* 왼쪽 팀 - 컨테이너 기준 왼쪽 25% 지점에 중앙 정렬 */}
+              <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2/5 aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("김영준에게 축구를 배우다")}`} className="block w-full h-full transition-all duration-500 hover:scale-110 active:scale-95">
+                  <img 
+                    src="/teams/김영준에게 축구를 배우다.png" 
+                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_80px_rgba(57,255,20,0.6)] transition-all" 
+                    alt="Team Left" 
+                  />
                 </Link>
               </div>
 
-              {/* 경기 날짜 하단 배치 */}
-              <div className="relative z-10 mt-12 md:mt-16">
-                <div className="rounded-full border border-white/10 bg-white/5 px-10 py-3 backdrop-blur-3xl shadow-xl">
+              {/* 오른쪽 팀 - 컨테이너 기준 오른쪽 25%(left 75%) 지점에 중앙 정렬 */}
+              <div className="absolute left-3/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2/5 aspect-square flex items-center justify-center">
+                <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="block w-full h-full transition-all duration-500 hover:scale-110 active:scale-95">
+                  <img 
+                    src="/teams/빵빵이의 축구교실.png" 
+                    className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_80px_rgba(34,211,238,0.6)] transition-all" 
+                    alt="Team Right" 
+                  />
+                </Link>
+              </div>
+
+              {/* 경기 날짜 하단 중앙 배치 (커진 로고에 가리지 않게 y축 위치 조정) */}
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20">
+                <div className="rounded-full border border-white/10 bg-[#06101f]/80 px-12 py-3.5 backdrop-blur-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
                   <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">APRIL 04 / 19:30 KST</p>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
+        
         {/* 🏆 TOURNAMENT BRACKET */}
         <div className="mb-24">
           <h2 className="text-3xl font-black italic mb-10 tracking-[0.2em] uppercase">
