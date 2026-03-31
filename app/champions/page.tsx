@@ -8,7 +8,7 @@ export default function ChampionsPage() {
   const [activeTab, setActiveTab] = useState<string>('남자축구');
   const [selectedWinner, setSelectedWinner] = useState<ChampionRecord | null>(null);
 
-  // 📝 챔피언 데이터 (사진 경로 및 신규 우승팀 반영)
+  // 📝 챔피언 데이터 (최신 시즌이 위로 오도록 순서 변경)
   const hallOfFame: ChampionItem[] = [
     {
       sport: '남자축구',
@@ -28,16 +28,16 @@ export default function ChampionsPage() {
       sport: '남자농구',
       emoji: '🏀',
       history: [
+        { season: '26 Spring', winner: '빵빵이의 농구교실', class: 'Class of 2028', photo: '' }, // 최신 시즌 위로
         { season: '25 Fall', winner: '머리 큰 조던', class: 'Class of 2026', photo: '/champions/남자농구 25F.JPG' },
-        { season: '26 Spring', winner: '빵빵이의 농구교실', class: 'Class of 2028', photo: '' }, // 사진 없음
       ],
     },
     {
       sport: '여자배구',
       emoji: '🏐',
       history: [
+        { season: '26 Spring', winner: '어~시니어야~', class: 'Class of 2027', photo: '' }, // 최신 시즌 위로
         { season: '25 Fall', winner: '개천에서 용 난다', class: '연합팀', photo: '/champions/여자배구 25F.JPG' },
-        { season: '26 Spring', winner: '어~시니어야~', class: 'Class of 2027', photo: '' }, // 사진 없음
       ],
     },
   ];
@@ -64,7 +64,7 @@ export default function ChampionsPage() {
             <div className="mt-5 h-[3px] w-28 rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-lime-400 shadow-[0_0_20px_rgba(34,211,238,0.55)]" />
           </div>
           <p className="max-w-md text-sm md:text-right text-white/55 leading-relaxed italic">
-            Celebrating the elite athletes and teams who have dominated the MASL arena.
+            Official archive of MASL champions. Exploring the future legacy of sports.
           </p>
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function ChampionsPage() {
         })}
       </div>
 
-      {/* 우승 카드 리스트 */}
+      {/* 우승 카드 리스트 (정렬된 결과) */}
       <div className="max-w-5xl mx-auto grid gap-6">
         {filteredData.map((item) =>
           item.history.map((record, idx) => (
@@ -120,7 +120,7 @@ export default function ChampionsPage() {
                   <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-5 py-2 text-[11px] font-black tracking-widest text-lime-200 uppercase">
                     {record.class}
                   </span>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-3xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-3xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
                     🏆
                   </div>
                 </div>
@@ -151,7 +151,6 @@ export default function ChampionsPage() {
               </h2>
               <p className="text-sm font-bold text-white/40 tracking-[0.2em] mb-8">{selectedWinner.class}</p>
 
-              {/* 💡 사진 조건부 렌더링 영역 */}
               <div className="relative aspect-video w-full overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.02] shadow-2xl flex items-center justify-center">
                 {selectedWinner.photo ? (
                   <img 
@@ -179,14 +178,6 @@ export default function ChampionsPage() {
           </div>
         </div>
       )}
-
-      {/* 푸터 */}
-      <div className="max-w-5xl mx-auto mt-24 pt-8">
-        <div className="flex items-center justify-between border-t border-white/10 pt-6">
-          <p className="text-xs tracking-[0.4em] uppercase text-white/20 font-black italic">MASL Legacy</p>
-          <p className="text-[10px] font-black text-cyan-300/30 uppercase tracking-widest italic">All records are permanently archived.</p>
-        </div>
-      </div>
     </div>
   );
 }
