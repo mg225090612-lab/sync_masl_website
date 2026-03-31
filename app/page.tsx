@@ -7,8 +7,14 @@ import { supabase } from '@/lib/supabase';
 export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
+  type NavMenu = {
+    title: string;
+    path: string;
+    sub: { name: string; path: string }[];
+  };
+
   // 🌐 글로벌 네비게이션 메뉴 데이터 (Predictions 제거됨)
-  const navMenus = [
+  const navMenus: NavMenu[] = [
     {
       title: 'MASL',
       path: '/',
