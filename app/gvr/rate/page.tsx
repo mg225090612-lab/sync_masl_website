@@ -31,10 +31,19 @@ export default function GvrRatePage() {
     fetchUser();
   }, []);
 
-  // 1. 경기 로드
+  // 💡 1. 경기 로드 (2일 지난 경기 필터링)
   useEffect(() => {
     async function loadMatches() {
-      const { data } = await supabase.from('matches').select('*').order('match_date', { ascending: false });
+      // 현재 시간 기준으로 2일(48시간) 전 날짜 계산
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+      const { data } = await supabase
+        .from('matches')
+        .select('*')
+        .gte('match_date', twoDaysAgo.toISOString()) // 💡 match_date가 2일 전보다 크거나 같은(최신인) 경기만 가져옴
+        .order('match_date', { ascending: false });
+
       if (data && data.length > 0) {
         setMatches(data);
         setActiveMatch(data[0]);
@@ -70,7 +79,7 @@ export default function GvrRatePage() {
     loadPlayersWithRatings();
   }, [loadPlayersWithRatings]);
 
-  // 💡 3. 제출 로직 (중복 체크 추가)
+  // 3. 제출 로직 (중복 체크 추가)
   const handleSubmit = async () => {
     if (!currentUser) return alert('로그인이 필요한 서비스입니다.');
     if (!selectedPlayer || !rating) return alert('평점을 선택해주세요.');
@@ -109,7 +118,7 @@ export default function GvrRatePage() {
 
   return (
     <div className="relative min-h-screen bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans overflow-x-hidden">
-      {/* 네비게이션 생략 (기존과 동일) */}
+      {/* 네비게이션 */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-6 flex h-20 items-center justify-start gap-12 text-[11px] font-black uppercase tracking-widest">
           {navMenus.map((menu) => (
@@ -128,14 +137,21 @@ export default function GvrRatePage() {
           Rate <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">Players</span>
         </h1>
 
-        {/* 경기 선택 생략 (기존과 동일) */}
+        {/* 경기 선택 리스트 */}
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-10 mb-10 border-b border-white/5">
           {matches.map(m => (
-            <button key={m.id} onClick={() => setActiveMatch(m)} className={`flex flex-col rounded-[2.5rem] border px-10 py-6 min-w-[300px] transition-all text-left ${activeMatch?.id === m.id ? 'border-cyan-400 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/5 bg-white/5 opacity-40'}`}>
+            <button key={m.id} onClick={() => setActiveMatch(m)} className={`flex flex-col rounded-[2.5rem] border px-10 py-6 min-w-[300px] transition-all text-left ${activeMatch?.id === m.id ? 'border-cyan-400 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-white/5 bg-white/5 opacity-40 hover:opacity-100 hover:bg-white/10'}`}>
               <span className="text-[10px] font-black text-cyan-400/60 mb-2 uppercase tracking-widest italic">{m.sport_type}</span>
               <span className="font-black italic text-xl uppercase tracking-tighter mb-1 leading-tight">{m.team_a} <br/>vs {m.team_b}</span>
             </button>
           ))}
+          
+          {/* 💡 2일 이내에 경기가 없을 경우를 위한 안내 (선택사항) */}
+          {matches.length === 0 && (
+            <div className="flex items-center justify-center w-full py-6 text-white/30 font-black italic text-sm tracking-widest uppercase">
+              최근 2일 이내에 진행된 경기가 없습니다.
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -161,7 +177,7 @@ export default function GvrRatePage() {
             </h2>
 
             <div className="space-y-10">
-              {/* 💡 학번 입력 대신 계정 이메일 노출 (원래 모양 유지) */}
+              {/* 학번 입력 대신 계정 이메일 노출 */}
               <div className="space-y-4">
                 <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-center">Authenticated User</p>
                 <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-xl font-black text-center text-cyan-300/80">
