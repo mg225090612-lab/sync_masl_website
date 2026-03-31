@@ -7,10 +7,12 @@ import { supabase } from '@/lib/supabase';
 export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
+  // 💡 Predictions 메뉴가 추가된 네비게이션 데이터!
   const navMenus = [
     { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
     { title: 'GVR', path: '/gvr/rate', sub: [{ name: 'Rate Players', path: '/gvr/rate' }, { name: 'View Results', path: '/gvr/view' }] },
-    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] }
+    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] },
+    { title: 'Predictions', path: '/predictions', sub: [{ name: 'Match Predict', path: '/predictions' }] }
   ];
 
   const handleGoogleLogin = async () => {
