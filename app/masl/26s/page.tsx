@@ -118,7 +118,7 @@ export default function Masl26sPage() {
           {/* LEFT COL (Bracket) */}
           <div className="lg:col-span-8 space-y-16">
             
-            {/* 🏆 TOURNAMENT BRACKET (세로형 트리) */}
+            {/* 🏆 TOURNAMENT BRACKET (역방향 세로 트리) */}
             <div>
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-black uppercase tracking-[0.2em] text-white italic">Tournament Bracket</h3>
@@ -131,38 +131,38 @@ export default function Masl26sPage() {
               <div className="relative rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl p-6 md:p-12 shadow-inner">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,255,255,0.03),transparent_70%)] pointer-events-none" />
                 
-                {/* 💡 세로 정렬 레이아웃 */}
+                {/* 💡 세로 정렬 레이아웃 (아래에서 위로) */}
                 <div className="relative z-10 flex flex-col items-center w-full font-sans">
                   
-                  {/* 1. Semi-Finals (2열 배치) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full z-10">
-                    <MatchCard match={semi1} label="Semi-Final 1" />
-                    <MatchCard match={semi2} label="Semi-Final 2" />
+                  {/* 1. Champion (우승자 - 최상단) */}
+                  <div className="w-full md:w-2/3 z-10 mb-2">
+                    <ChampionCard name={championName} />
                   </div>
 
-                  {/* 2. Semi -> Final 연결선 (모바일은 직선, 데스크탑은 U자형) */}
-                  <div className="hidden md:flex flex-col items-center w-full opacity-30">
-                    <div className="w-1/2 h-8 border-b-2 border-l-2 border-r-2 border-white/20 rounded-b-2xl"></div>
-                    <div className="h-8 border-l-2 border-white/20"></div>
+                  {/* 2. Final -> Champion 연결선 (점선 화살표 위로 향함) */}
+                  <div className="flex flex-col items-center w-full opacity-80">
+                    <div className="h-12 border-l-2 border-dashed border-cyan-400/50 relative">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
+                    </div>
                   </div>
-                  {/* 모바일용 직선 연결선 */}
-                  <div className="flex md:hidden h-12 border-l-2 border-white/20 opacity-30"></div>
 
                   {/* 3. Final */}
                   <div className="w-full md:w-3/4 z-10">
                     <MatchCard match={finalMatch} label="The Grand Final" isFinal={true} />
                   </div>
 
-                  {/* 4. Final -> Champion 연결선 (점선 화살표) */}
-                  <div className="flex flex-col items-center w-full opacity-80">
-                    <div className="h-12 border-l-2 border-dashed border-cyan-400/50 relative">
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rotate-45 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
-                    </div>
+                  {/* 4. Semi -> Final 연결선 (모바일은 직선, 데스크탑은 역 U자형) */}
+                  <div className="hidden md:flex flex-col items-center w-full opacity-30">
+                    <div className="h-8 border-l-2 border-white/20"></div>
+                    <div className="w-1/2 h-8 border-t-2 border-l-2 border-r-2 border-white/20 rounded-t-2xl"></div>
                   </div>
+                  {/* 모바일용 직선 연결선 */}
+                  <div className="flex md:hidden h-12 border-l-2 border-white/20 opacity-30"></div>
 
-                  {/* 5. Champion (우승자) */}
-                  <div className="w-full md:w-2/3 z-10 mt-2">
-                    <ChampionCard name={championName} />
+                  {/* 5. Semi-Finals (2열 배치 - 최하단) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full z-10">
+                    <MatchCard match={semi1} label="Semi-Final 1" />
+                    <MatchCard match={semi2} label="Semi-Final 2" />
                   </div>
 
                 </div>
@@ -211,7 +211,7 @@ export default function Masl26sPage() {
 }
 
 /* -------------------------------------------
-   서브 컴포넌트: 세로형 대진표 전용 UI
+   서브 컴포넌트: 상향식 세로형 대진표 전용 UI
 ------------------------------------------- */
 
 // 매치 박스 컴포넌트 (일반 라운드 / 결승 공통)
