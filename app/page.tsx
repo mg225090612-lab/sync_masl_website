@@ -26,25 +26,35 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans">
-      
-      {/* 🌐 TOP NAVIGATION BAR */}
+    {/* 🌐 TOP NAVIGATION BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 md:px-6 h-20 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-12">
             {navMenus.map((menu) => (
               <div key={menu.title} className="relative group py-7" onMouseEnter={() => setActiveMenu(menu.title)} onMouseLeave={() => setActiveMenu(null)}>
-                <button className={`text-xs md:text-sm font-black tracking-widest transition-all uppercase ${activeMenu === menu.title ? 'text-cyan-400' : 'text-white/40 group-hover:text-white'}`}>
+                
+                {/* 💡 에러 무시하고 무조건 강제 이동하도록 <Link> 대신 <a> 태그를 썼습니다! */}
+                {/* 💡 Predictions 글자에는 항상 파란 불빛이 들어오게 바꿨습니다! */}
+                <a 
+                  href={menu.path} 
+                  className={`block py-2 text-xs md:text-sm font-black tracking-widest transition-all uppercase cursor-pointer ${
+                    menu.title === 'Predictions' 
+                      ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' 
+                      : (activeMenu === menu.title ? 'text-cyan-400' : 'text-white/40 group-hover:text-white')
+                  }`}
+                >
                   {menu.title}
-                </button>
+                </a>
+
                 <div className={`absolute left-0 top-[85%] w-52 overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
                   {menu.title === 'MASL' && (
                     <div className="px-4 py-2 text-[9px] font-black tracking-[0.2em] text-cyan-400/40 uppercase border-b border-white/5 mb-1">Active Season</div>
                   )}
                   <div className="flex flex-col gap-1">
                     {menu.sub.map((s) => (
-                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">
+                      <a key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">
                         {s.name}
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
