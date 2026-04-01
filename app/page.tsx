@@ -45,8 +45,9 @@ export default function HomePage() {
   const prevSlide = () => setCurrentIdx((prev) => (prev - 1 + matches.length) % matches.length);
 
   return (
-    // 💡 최상단 패딩을 pt-28 -> pt-24 로 줄여 네비게이션 바로 밑까지 올렸습니다.
     <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-20 pt-15 text-white font-sans">
+      
+      {/* 🌐 NAV BAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 md:px-6 h-20 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-12">
@@ -84,41 +85,53 @@ export default function HomePage() {
         </div>
       </nav>
 
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
-      <div className="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
+      {/* 🔥 BACKGROUND LAYER */}
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#06101f_0%,#040b16_45%,#01050a_100%)]" />
+      <div className="absolute inset-0 -z-10 opacity-[0.05] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
-      {/* 💡 pt-4, pt-8 등 불필요한 위쪽 패딩을 완전히 날렸습니다! */}
-      <div className="mx-auto max-w-6xl relative z-10 pt-0">
+      <div className="mx-auto max-w-6xl relative z-10 flex flex-col min-h-[75vh]">
         
-        {/* 💡 mb-14 -> mb-8 로 줄여서 카드와의 간격을 좁혔습니다. */}
-        <div className="mb-8 text-center space-y-2 animate-in fade-in slide-in-from-top-6 duration-700">
-          <p className="inline-block text-[11px] md:text-sm font-black tracking-[0.6em] text-black bg-cyan-400 px-6 py-2 rounded-full uppercase italic shadow-[0_0_20px_rgba(34,211,238,0.5)] mb-4">
-            MASL 26 SPRING
-          </p>
-          <h2 className="text-6xl md:text-[7.5rem] font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)] leading-[0.85] pb-4">
-            Upcoming
+        {/* 💡 타이틀을 다시 화면 중앙 정렬(text-center, items-center)로 복구했습니다. 여백은 그대로 최소화! */}
+        <div className="animate-in fade-in slide-in-from-top-6 duration-1000 mt-0 flex flex-col items-center">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="h-[1px] w-12 md:w-20 bg-gradient-to-r from-transparent to-cyan-400/50"></div>
+            <p className="text-[10px] md:text-xs font-black tracking-[0.6em] text-cyan-400 uppercase italic drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+              MASL Live Event
+            </p>
+            <div className="h-[1px] w-12 md:w-20 bg-gradient-to-l from-transparent to-cyan-400/50"></div>
+          </div>
+          
+          <h2 className="text-5xl md:text-[5.5rem] font-black italic uppercase tracking-tighter leading-[0.9] text-center">
+            <span className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]">
+              Upcoming
+            </span>
             <br />
-            Matches
+            <span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)]">
+              Matches
+            </span>
           </h2>
         </div>
 
-        {/* 🚀 슬라이더 컨테이너 */}
-        <div className="relative w-full">
+        {/* 🚀 슬라이더 컨테이너 (mt-4 유지) */}
+        <div className="relative w-full mt-8 mb-10">
           
+          {/* ⬅️ 화살표 */}
           <button 
             onClick={prevSlide} 
-            className="absolute -left-5 md:-left-12 top-1/2 -translate-y-1/2 z-30 w-14 h-14 md:w-20 md:h-20 flex items-center justify-center rounded-full bg-[#06101f]/80 backdrop-blur-xl border-2 border-cyan-400/50 text-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:bg-cyan-400 hover:text-black hover:scale-110 transition-all group"
+            className="absolute -left-5 md:-left-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-[#06101f]/90 backdrop-blur-md border border-cyan-400/30 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:bg-cyan-400 hover:text-black hover:scale-110 transition-all group"
           >
-            <span className="text-4xl md:text-6xl font-black -ml-1 md:-ml-2 group-hover:drop-shadow-none">‹</span>
+            <span className="text-3xl md:text-4xl font-black -ml-1 md:-ml-2">‹</span>
           </button>
 
+          {/* ➡️ 화살표 */}
           <button 
             onClick={nextSlide} 
-            className="absolute -right-5 md:-right-12 top-1/2 -translate-y-1/2 z-30 w-14 h-14 md:w-20 md:h-20 flex items-center justify-center rounded-full bg-[#06101f]/80 backdrop-blur-xl border-2 border-cyan-400/50 text-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:bg-cyan-400 hover:text-black hover:scale-110 transition-all group"
+            className="absolute -right-5 md:-right-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-[#06101f]/90 backdrop-blur-md border border-cyan-400/30 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:bg-cyan-400 hover:text-black hover:scale-110 transition-all group"
           >
-            <span className="text-4xl md:text-6xl font-black -mr-1 md:-mr-2 group-hover:drop-shadow-none">›</span>
+            <span className="text-3xl md:text-4xl font-black -mr-1 md:-mr-2">›</span>
           </button>
 
+          {/* 💡 카드 본체 */}
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] aspect-[21/9] w-full">
             {matches.map((match, idx) => (
               <div 
@@ -152,7 +165,8 @@ export default function HomePage() {
             ))}
           </div>
           
-          <div className="flex justify-center gap-3 mt-10 relative z-20">
+          {/* 하단 도트 */}
+          <div className="flex justify-center gap-3 mt-6 relative z-20">
             {matches.map((_, idx) => (
               <button 
                 key={idx} 
@@ -164,7 +178,8 @@ export default function HomePage() {
 
         </div>
 
-        <div className="mt-40 text-center opacity-10 font-black text-8xl italic tracking-tighter select-none relative z-10 uppercase">
+        {/* 하단 로고 */}
+        <div className="mt-20 text-center opacity-10 font-black text-8xl italic tracking-tighter select-none relative z-10 uppercase">
           Masl & Sync
         </div>
       </div>
