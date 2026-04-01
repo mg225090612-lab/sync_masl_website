@@ -144,7 +144,7 @@ export default function GvrRatePage() {
     setRating(null);
   };
 
-  // 4. 등록 또는 수정
+ // 4. 등록 또는 수정
   const handleSubmit = async () => {
     if (!currentUser) {
       alert('로그인이 필요한 서비스입니다.');
@@ -164,10 +164,17 @@ export default function GvrRatePage() {
     setSubmitting(true);
 
     try {
+      // 🔥 1. 구글 이메일을 영혼까지 끌어모아서 확실하게 뽑아냅니다.
+      const userEmail = currentUser.email || currentUser.user_metadata?.email || '이메일없음';
+
       if (myRating) {
+        // 🔥 2. "수정"할 때도 이메일을 무조건 덮어씌워줍니다! (이게 빠져있었음)
         const { error } = await supabase
           .from('ratings')
-          .update({ score: rating })
+          .update({ 
+            score: rating,
+            user_email: userEmail 
+          })
           .eq('id', myRating.id);
 
         if (error) {
@@ -177,11 +184,12 @@ export default function GvrRatePage() {
 
         alert('평점이 수정되었습니다.');
       } else {
+        // "새로 등록"할 때
         const { error } = await supabase.from('ratings').insert({
           match_id: activeMatch.id,
           player_id: selectedPlayer.id,
           student_id: currentUser.id,
-          user_email: currentUser.email, // 💡 새로 추가한 컬럼에 이메일 꽂아주기!
+          user_email: userEmail, // 🔥 추출한 이메일 넣기
           score: rating,
         });
 
