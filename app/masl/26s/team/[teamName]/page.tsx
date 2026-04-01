@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // 💡 useRouter 추가
 import { supabase } from '@/lib/supabase';
 
 interface PageProps {
@@ -11,6 +12,7 @@ interface PageProps {
 export default function TeamPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const teamName = decodeURIComponent(resolvedParams.teamName);
+  const router = useRouter(); // 💡 라우터 초기화
 
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,19 +44,17 @@ export default function TeamPage({ params }: PageProps) {
 
   return (
     <div className="relative min-h-screen bg-[#06101f] pt-32 px-6 pb-20 text-white">
-
-      {/* 배경 */}
       <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top,rgba(0,255,255,0.12),transparent_30%)]" />
 
       <div className="max-w-6xl mx-auto">
 
-        {/* BACK */}
-        <Link
-          href="/masl/26s"
-          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block"
+        {/* 💡 수정된 BACK 버튼: 클릭 시 바로 직전 페이지로 이동 */}
+        <button
+          onClick={() => router.back()}
+          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block hover:text-white transition-colors"
         >
-          ← BACK TO HUB
-        </Link>
+          ← BACK
+        </button>
 
         {/* TITLE */}
         <h1 className="text-5xl md:text-8xl font-black italic tracking-[-0.05em] mb-16">
@@ -72,12 +72,9 @@ export default function TeamPage({ params }: PageProps) {
   );
 }
 
-// 💡 선수 카드 1개를 렌더링하는 전용 컴포넌트
+// PlayerCard 컴포넌트는 그대로 유지하시면 됩니다!
 function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
-  // 사진 로딩 실패(스토리지에 사진이 없음) 여부를 기억하는 상태
   const [imgError, setImgError] = useState(false);
-
-  // 🔥 핵심: 대문자 .JPG 적용 및 Supabase 내장 함수로 안전하게 이미지 주소 생성
   const { data } = supabase.storage.from('player-photos').getPublicUrl(`${p.id}.png`);
   const imageUrl = data.publicUrl;
 
@@ -87,15 +84,13 @@ function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
       className="group"
     >
       <div className="relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-white/[0.04] backdrop-blur-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-
-        {/* IMAGE */}
         <div className="aspect-[3/4] flex items-center justify-center relative bg-black/20">
           {!imgError ? (
             <img 
               src={imageUrl} 
               alt={p.name}
               className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-              onError={() => setImgError(true)} // 🚨 사진이 없어서 404가 뜨면 즉시 등번호(true)로 전환!
+              onError={() => setImgError(true)} 
             />
           ) : (
             <div className="text-5xl opacity-20 font-black italic">
@@ -103,12 +98,9 @@ function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
             </div>
           )}
         </div>
-
-        {/* NAME */}
         <div className="p-3 text-center">
           <p className="font-black text-sm">{p.name}</p>
         </div>
-
       </div>
     </Link>
   );
