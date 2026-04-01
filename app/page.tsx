@@ -79,7 +79,7 @@ export default function HomePage() {
           <div className="mt-8">
             <h1 className="text-7xl md:text-[10rem] font-black italic tracking-[-0.06em] leading-[0.85] uppercase">
               <span className="text-white block">MASL</span>
-              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent italic">26 SUMMER</span>
+              <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent italic">26 SPRING</span>
             </h1>
             <div className="mt-10 h-[5px] w-40 bg-gradient-to-r from-cyan-400 to-lime-400 shadow-[0_0_30px_rgba(34,211,238,0.8)] rounded-full" />
           </div>
