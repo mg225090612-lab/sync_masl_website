@@ -181,6 +181,7 @@ export default function GvrRatePage() {
           match_id: activeMatch.id,
           player_id: selectedPlayer.id,
           student_id: currentUser.id,
+          user_email: currentUser.email, // 💡 새로 추가한 컬럼에 이메일 꽂아주기!
           score: rating,
         });
 
