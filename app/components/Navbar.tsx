@@ -1,20 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase'; // 💡 로그인 기능을 위해 supabase 추가
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
-  
-  // 🔐 구글 로그인 핸들러 (사진에 보여주신 /auth/callback 으로 정확히 연결됨!)
+  const [user, setUser] = useState<any>(null);
+
+  // 💡 컴포넌트가 마운트될 때 현재 로그인한 유저 정보를 가져옵니다.
+  useEffect(() => {
+    // 1. 첫 로딩 시 현재 세션 확인
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    // 2. 로그인/로그아웃 상태가 변할 때마다 실시간으로 감지해서 버튼을 바꿔줍니다.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // 🔐 구글 로그인 핸들러
   const handleGoogleLogin = async () => {
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-      },
+      options: { redirectTo: redirectUrl },
     });
     if (error) alert('로그인 에러: ' + error.message);
+  };
+
+  // 🔓 로그아웃 핸들러
+  const handleLogout = async () => {
+    if (confirm('로그아웃 하시겠습니까?')) {
+      await supabase.auth.signOut();
+    }
   };
 
   return (
@@ -32,66 +54,51 @@ export default function Navbar() {
         {/* 오른쪽: 메뉴 및 로그인 버튼 */}
         <div className="flex items-center gap-8 text-sm font-bold">
           <div className="group relative">
-            <span className="cursor-pointer text-white/70 transition hover:text-cyan-300">
-              MASL
-            </span>
+            <span className="cursor-pointer text-white/70 transition hover:text-cyan-300">MASL</span>
             <div className="absolute left-0 top-full h-4 w-full bg-transparent" />
             <div className="absolute -left-8 mt-4 hidden w-52 rounded-2xl border border-cyan-300/10 bg-[#081426]/95 p-2 shadow-[0_0_30px_rgba(34,211,238,0.14)] backdrop-blur-xl group-hover:block">
-              <p className="px-4 pb-2 pt-3 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300/45">
-                Active Season
-              </p>
-              <Link
-                href="/masl/26s"
-                className="block rounded-xl border border-cyan-300/10 bg-cyan-300/10 px-4 py-3 font-black text-cyan-200 transition hover:bg-cyan-300/18"
-              >
+              <p className="px-4 pb-2 pt-3 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-300/45">Active Season</p>
+              <Link href="/masl/26s" className="block rounded-xl border border-cyan-300/10 bg-cyan-300/10 px-4 py-3 font-black text-cyan-200 transition hover:bg-cyan-300/18">
                 26 Spring
               </Link>
             </div>
           </div>
 
           <div className="group relative">
-            <span className="cursor-pointer text-white/70 transition hover:text-lime-300">
-              GVR
-            </span>
+            <span className="cursor-pointer text-white/70 transition hover:text-lime-300">GVR</span>
             <div className="absolute left-0 top-full h-4 w-full bg-transparent" />
             <div className="absolute -left-8 mt-4 hidden w-52 rounded-2xl border border-cyan-300/10 bg-[#081426]/95 p-2 shadow-[0_0_30px_rgba(34,211,238,0.14)] backdrop-blur-xl group-hover:block">
-              <Link
-                href="/gvr/rate"
-                className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200"
-              >
-                Rate
-              </Link>
-              <Link
-                href="/gvr/view"
-                className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200"
-              >
-                View
-              </Link>
+              <Link href="/gvr/rate" className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200">Rate</Link>
+              <Link href="/gvr/view" className="block rounded-xl px-4 py-3 font-bold text-white/75 transition hover:bg-cyan-300/10 hover:text-cyan-200">View</Link>
             </div>
           </div>
 
-          <Link
-            href="/champions"
-            className="text-white/80 transition hover:text-cyan-300"
-          >
+          <Link href="/champions" className="text-white/80 transition hover:text-cyan-300">
             Champions
           </Link>
 
-          {/* 💡 회색으로 죽어있던 Predictions를 완전히 살려냈습니다! */}
-          <Link
-            href="/predictions"
-            className="text-white/80 transition hover:text-cyan-300"
-          >
+          <Link href="/predictions" className="text-white/80 transition hover:text-cyan-300">
             Predictions
           </Link>
 
-          {/* 💡 로그인 버튼 추가 */}
-          <button 
-            onClick={handleGoogleLogin}
-            className="ml-2 rounded-full border border-cyan-400/50 bg-cyan-400/10 px-5 py-2 text-[11px] font-black tracking-widest text-cyan-300 transition-all hover:bg-cyan-400 hover:text-black uppercase shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95"
-          >
-            Sign In
-          </button>
+          {/* 💡 유저 정보 유무에 따라 버튼이 바뀝니다! */}
+          {user ? (
+            <button 
+              onClick={handleLogout}
+              className="ml-2 rounded-full border border-lime-400/50 bg-lime-400/10 px-5 py-2 text-[11px] font-black tracking-widest text-lime-300 transition-all hover:bg-lime-400 hover:text-black uppercase shadow-[0_0_15px_rgba(163,230,53,0.2)] active:scale-95"
+              title="클릭 시 로그아웃"
+            >
+              {/* 구글 닉네임을 보여주거나, 없다면 이메일의 @ 앞부분을 보여줍니다. */}
+              {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}
+            </button>
+          ) : (
+            <button 
+              onClick={handleGoogleLogin}
+              className="ml-2 rounded-full border border-cyan-400/50 bg-cyan-400/10 px-5 py-2 text-[11px] font-black tracking-widest text-cyan-300 transition-all hover:bg-cyan-400 hover:text-black uppercase shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </div>
 

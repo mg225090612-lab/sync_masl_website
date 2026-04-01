@@ -11,6 +11,9 @@ export default function PredictionsPage() {
   
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
+  
+  // 💡 [추가됨] 모든 유저의 투표 수를 저장하는 상태
+  const [voteCounts, setVoteCounts] = useState<Record<string, Record<string, number>>>({});
 
   const navMenus = [
     { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
@@ -42,17 +45,28 @@ export default function PredictionsPage() {
 
   useEffect(() => {
     async function loadMatches() {
-      // 기준 시간: 현재 시간으로부터 1일(24시간) 전
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
       const { data } = await supabase
         .from('matches')
         .select('*')
-        .gte('match_date', oneDayAgo.toISOString()) // 1일 전보다 미래인 경기만
+        .gte('match_date', oneDayAgo.toISOString())
         .order('match_date', { ascending: true });
 
       setMatches(data || []);
+
+      // 💡 [추가됨] 전체 투표 현황을 가져와서 퍼센트 계산용 데이터로 변환
+      const { data: allVotes } = await supabase.from('predictions').select('match_id, predicted_team');
+      if (allVotes) {
+        const counts: Record<string, Record<string, number>> = {};
+        allVotes.forEach(v => {
+          if (!counts[v.match_id]) counts[v.match_id] = {};
+          counts[v.match_id][v.predicted_team] = (counts[v.match_id][v.predicted_team] || 0) + 1;
+        });
+        setVoteCounts(counts);
+      }
+
       setLoading(false);
     }
     loadMatches();
@@ -79,6 +93,19 @@ export default function PredictionsPage() {
 
     if (!error) {
       setUserVotes(prev => ({ ...prev, [matchId]: teamName }));
+      
+      // 💡 [추가됨] 내가 투표하자마자 퍼센트 바가 실시간으로 움직이도록 카운트 증가
+      setVoteCounts(prev => {
+        const matchCounts = prev[matchId] || {};
+        return {
+          ...prev,
+          [matchId]: {
+            ...matchCounts,
+            [teamName]: (matchCounts[teamName] || 0) + 1
+          }
+        };
+      });
+      
       alert(`[${teamName}] 승리에 투표하셨습니다!`);
     } else {
       alert('투표 실패: ' + error.message);
@@ -137,71 +164,110 @@ export default function PredictionsPage() {
               <p className="text-white/30 font-black tracking-[0.3em] uppercase italic text-xl">진행 중인 예측 경기가 없습니다.</p>
             </div>
           ) : (
-            matches.map((match, index) => (
-              <div key={match.id} className="relative z-0 group">
-                <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] aspect-[21/9]">
-                  <img src={`/images/match_bg_${(index % 2) + 1}.png`} alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
-                  
-                  <div className="relative z-10 h-full w-full">
-                    <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
-                      <img src={`/teams/${match.team_a}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" alt={match.team_a} />
-                    </div>
+            matches.map((match, index) => {
+              // 💡 [추가됨] 투표 퍼센트 계산
+              const counts = voteCounts[match.id] || {};
+              const votesA = counts[match.team_a] || 0;
+              const votesB = counts[match.team_b] || 0;
+              const totalVotes = votesA + votesB;
+              const percentA = totalVotes === 0 ? 50 : Math.round((votesA / totalVotes) * 100);
+              const percentB = totalVotes === 0 ? 50 : 100 - percentA;
 
-                    <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center">
-                      <img src={`/teams/${match.team_b}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" alt={match.team_b} />
-                    </div>
+              return (
+                <div key={match.id} className="relative z-0 group">
+                  <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] aspect-[21/9]">
+                    <img src={`/images/match_bg_${(index % 2 + 2) }.png`} alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+                    
+                    <div className="relative z-10 h-full w-full">
+                      <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
+                        <img src={`/teams/${match.team_a}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" alt={match.team_a} />
+                      </div>
 
-                    <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                      <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
-                        <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">
-                          {new Date(match.match_date).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false })} KST
-                        </p>
+                      <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center">
+                        <img src={`/teams/${match.team_b}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" alt={match.team_b} />
+                      </div>
+
+                      <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                        <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
+                          <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">
+                            {new Date(match.match_date).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false })} KST
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-8 grid grid-cols-2 gap-6 px-10">
-                  <button 
-                    onClick={() => handleVote(match.id, match.team_a)}
-                    disabled={!!userVotes[match.id]}
-                    className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
-                      userVotes[match.id] === match.team_a 
-                        ? 'border-cyan-400 bg-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.4)]' 
-                        : userVotes[match.id] 
-                          ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
-                          : 'border-white/10 bg-[#0b1730] hover:border-cyan-400/50 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="relative z-10 flex flex-col items-center gap-2">
-                      <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_a ? 'text-cyan-300' : 'text-white/40'}`}>Predict Win</span>
-                      <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_a ? 'text-white' : 'text-white/80 group-hover/btn:text-cyan-300'}`}>
-                        {match.team_a}
-                      </span>
+                  {/* 💡 [추가됨] 퍼센트 바 디자인 */}
+                  <div className="mt-8 px-10 w-full relative z-10">
+                    <div className="flex justify-between items-end mb-2">
+                      <div className="flex flex-col items-start">
+                        <span className="text-cyan-400 text-3xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">{percentA}%</span>
+                        <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">{votesA} Votes</span>
+                      </div>
+                      
+                      <span className="text-white/30 text-[10px] font-black tracking-[0.4em] uppercase pb-2">Fan Forecast</span>
+                      
+                      <div className="flex flex-col items-end">
+                        <span className="text-lime-400 text-3xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]">{percentB}%</span>
+                        <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">{votesB} Votes</span>
+                      </div>
                     </div>
-                  </button>
+                    
+                    <div className="h-4 w-full bg-[#0b1730] rounded-full overflow-hidden flex shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-white/5 relative">
+                      <div 
+                        className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 transition-all duration-[1.5s] ease-out shadow-[0_0_15px_rgba(34,211,238,0.8)]" 
+                        style={{ width: `${percentA}%` }} 
+                      />
+                      <div 
+                        className="h-full bg-gradient-to-l from-lime-500 to-lime-300 transition-all duration-[1.5s] ease-out shadow-[0_0_15px_rgba(163,230,53,0.8)]" 
+                        style={{ width: `${percentB}%` }} 
+                      />
+                    </div>
+                  </div>
 
-                  <button 
-                    onClick={() => handleVote(match.id, match.team_b)}
-                    disabled={!!userVotes[match.id]}
-                    className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
-                      userVotes[match.id] === match.team_b 
-                        ? 'border-lime-400 bg-lime-400/20 shadow-[0_0_30px_rgba(163,230,53,0.4)]' 
-                        : userVotes[match.id] 
-                          ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
-                          : 'border-white/10 bg-[#0b1730] hover:border-lime-400/50 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="relative z-10 flex flex-col items-center gap-2">
-                      <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_b ? 'text-lime-300' : 'text-white/40'}`}>Predict Win</span>
-                      <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_b ? 'text-white' : 'text-white/80 group-hover/btn:text-lime-300'}`}>
-                        {match.team_b}
-                      </span>
-                    </div>
-                  </button>
+                  {/* 기존 버튼 영역 */}
+                  <div className="mt-8 grid grid-cols-2 gap-6 px-10">
+                    <button 
+                      onClick={() => handleVote(match.id, match.team_a)}
+                      disabled={!!userVotes[match.id]}
+                      className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
+                        userVotes[match.id] === match.team_a 
+                          ? 'border-cyan-400 bg-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.4)]' 
+                          : userVotes[match.id] 
+                            ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
+                            : 'border-white/10 bg-[#0b1730] hover:border-cyan-400/50 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="relative z-10 flex flex-col items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_a ? 'text-cyan-300' : 'text-white/40'}`}>Predict Win</span>
+                        <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_a ? 'text-white' : 'text-white/80 group-hover/btn:text-cyan-300'}`}>
+                          {match.team_a}
+                        </span>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => handleVote(match.id, match.team_b)}
+                      disabled={!!userVotes[match.id]}
+                      className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
+                        userVotes[match.id] === match.team_b 
+                          ? 'border-lime-400 bg-lime-400/20 shadow-[0_0_30px_rgba(163,230,53,0.4)]' 
+                          : userVotes[match.id] 
+                            ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
+                            : 'border-white/10 bg-[#0b1730] hover:border-lime-400/50 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="relative z-10 flex flex-col items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_b ? 'text-lime-300' : 'text-white/40'}`}>Predict Win</span>
+                        <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_b ? 'text-white' : 'text-white/80 group-hover/btn:text-lime-300'}`}>
+                          {match.team_b}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
