@@ -49,9 +49,9 @@ export default function TeamPage({ params }: PageProps) {
       <div className="max-w-6xl mx-auto">
 
         {/* 💡 수정된 BACK 버튼: 클릭 시 바로 직전 페이지로 이동 */}
-        <button
-          onClick={() => router.back()}
-          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block hover:text-white transition-colors"
+       <button
+          onClick={() => window.history.back()}
+          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block hover:text-white transition-colors cursor-pointer"
         >
           ← BACK
         </button>

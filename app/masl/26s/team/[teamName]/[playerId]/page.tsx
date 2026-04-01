@@ -53,12 +53,13 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* 💡 유저님이 작성하신 "원래 코드 100% 그대로" 복구했습니다. (폰트 유지, mb-6 간격 복구) */}
-        <Link
-          href={`/masl/26s/team/${encodeURIComponent(teamName)}`}
-          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block"
+        {/* 💡 Link 태그 대신 순정 뒤로가기 사용. 히스토리가 꼬이지 않아 팀 페이지에서 무한 루프에 안 빠집니다! */}
+        <button
+          onClick={() => window.history.back()}
+          className="text-xs tracking-[0.3em] text-cyan-300 uppercase mb-6 inline-block hover:text-white transition-colors cursor-pointer"
         >
           ← BACK TO TEAM
-        </Link>
+        </button>
 
         <div className="grid md:grid-cols-12 gap-12 md:gap-20 items-center">
 
