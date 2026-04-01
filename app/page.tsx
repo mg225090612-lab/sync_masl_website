@@ -92,7 +92,7 @@ export default function HomePage() {
           </div>
 
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
-            <img src="/images/match_bg_1.png" alt="Match Background 1" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            <img src="/images/match_bg_2.png" alt="Match Background 1" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
             <div className="relative z-10 h-full w-full">
               <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
                 <Link href={`/masl/26s/team/${encodeURIComponent("빵빵이의 축구교실")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
@@ -113,7 +113,7 @@ export default function HomePage() {
           </div>
 
           <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] group aspect-[21/9]">
-            <img src="/images/match_bg_2.png" alt="Match Background 2" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+            <img src="/images/match_bg_1.png" alt="Match Background 2" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
             <div className="relative z-10 h-full w-full">
               <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
                 <Link href={`/masl/26s/team/${encodeURIComponent("옥지의 축구교실")}`} className="block w-full h-full transition-all duration-500 hover:scale-105 active:scale-95">
