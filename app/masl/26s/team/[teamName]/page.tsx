@@ -72,14 +72,14 @@ export default function TeamPage({ params }: PageProps) {
   );
 }
 
-// 💡 [추가됨] 선수 카드 1개를 렌더링하는 전용 컴포넌트 (에러 처리를 위해 분리)
+// 💡 선수 카드 1개를 렌더링하는 전용 컴포넌트
 function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
   // 사진 로딩 실패(스토리지에 사진이 없음) 여부를 기억하는 상태
   const [imgError, setImgError] = useState(false);
 
-  // Supabase 스토리지 주소와 선수 ID를 결합하여 이미지 주소 생성 (형식: id.jpg)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const imageUrl = `${supabaseUrl}/storage/v1/object/public/player-photos/${p.id}.jpg`;
+  // 🔥 핵심: 대문자 .JPG 적용 및 Supabase 내장 함수로 안전하게 이미지 주소 생성
+  const { data } = supabase.storage.from('player-photos').getPublicUrl(`${p.id}.png`);
+  const imageUrl = data.publicUrl;
 
   return (
     <Link
@@ -89,16 +89,16 @@ function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
       <div className="relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-white/[0.04] backdrop-blur-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
 
         {/* IMAGE */}
-        <div className="aspect-[3/4] flex items-center justify-center relative">
+        <div className="aspect-[3/4] flex items-center justify-center relative bg-black/20">
           {!imgError ? (
             <img 
               src={imageUrl} 
               alt={p.name}
-              className="w-full h-full object-cover"
-              onError={() => setImgError(true)} // 🚨 핵심: 스토리지에 사진이 없어서 404가 뜨면 즉시 등번호(true)로 전환!
+              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+              onError={() => setImgError(true)} // 🚨 사진이 없어서 404가 뜨면 즉시 등번호(true)로 전환!
             />
           ) : (
-            <div className="text-5xl opacity-20 font-black">
+            <div className="text-5xl opacity-20 font-black italic">
               {p.player_number}
             </div>
           )}
