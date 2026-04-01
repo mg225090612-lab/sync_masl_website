@@ -64,34 +64,52 @@ export default function TeamPage({ params }: PageProps) {
         {/* GRID */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {players.map((p) => (
-            <Link
-              key={p.id}
-              href={`/masl/26s/team/${encodeURIComponent(teamName)}/${p.id}`}
-              className="group"
-            >
-              <div className="relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-white/[0.04] backdrop-blur-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
-
-                {/* IMAGE */}
-                <div className="aspect-[3/4] flex items-center justify-center">
-                  {p.photo_url ? (
-                    <img src={p.photo_url} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-5xl opacity-20 font-black">
-                      {p.player_number}
-                    </div>
-                  )}
-                </div>
-
-                {/* NAME */}
-                <div className="p-3 text-center">
-                  <p className="font-black text-sm">{p.name}</p>
-                </div>
-
-              </div>
-            </Link>
+            <PlayerCard key={p.id} p={p} teamName={teamName} />
           ))}
         </div>
       </div>
     </div>
+  );
+}
+
+// 💡 [추가됨] 선수 카드 1개를 렌더링하는 전용 컴포넌트 (에러 처리를 위해 분리)
+function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
+  // 사진 로딩 실패(스토리지에 사진이 없음) 여부를 기억하는 상태
+  const [imgError, setImgError] = useState(false);
+
+  // Supabase 스토리지 주소와 선수 ID를 결합하여 이미지 주소 생성 (형식: id.jpg)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const imageUrl = `${supabaseUrl}/storage/v1/object/public/player-photos/${p.id}.jpg`;
+
+  return (
+    <Link
+      href={`/masl/26s/team/${encodeURIComponent(teamName)}/${p.id}`}
+      className="group"
+    >
+      <div className="relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-white/[0.04] backdrop-blur-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+
+        {/* IMAGE */}
+        <div className="aspect-[3/4] flex items-center justify-center relative">
+          {!imgError ? (
+            <img 
+              src={imageUrl} 
+              alt={p.name}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)} // 🚨 핵심: 스토리지에 사진이 없어서 404가 뜨면 즉시 등번호(true)로 전환!
+            />
+          ) : (
+            <div className="text-5xl opacity-20 font-black">
+              {p.player_number}
+            </div>
+          )}
+        </div>
+
+        {/* NAME */}
+        <div className="p-3 text-center">
+          <p className="font-black text-sm">{p.name}</p>
+        </div>
+
+      </div>
+    </Link>
   );
 }
