@@ -176,7 +176,7 @@ export default function PredictionsPage() {
               return (
                 <div key={match.id} className="relative z-0 group">
                   <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] aspect-[21/9]">
-                    <img src={`/images/match_bg_${(index % 2 + 2) }.png`} alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
+                    <img src={`/images/match_bg_${(index % 2 + 1) }.png`} alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
                     
                     <div className="relative z-10 h-full w-full">
                       <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
