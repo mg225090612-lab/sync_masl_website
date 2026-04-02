@@ -14,6 +14,7 @@ export default function ChampionsPage() {
       sport: '남자축구',
       emoji: '⚽',
       history: [
+        { season: '26 Spring', winner: '김영준에게 축구를 배우다', class: 'Class of 2027', photo: '' }, // 💡 26 Spring 추가
         { season: '25 Fall', winner: '빵빵이의 축구교실', class: 'Class of 2028', photo: '/champions/남자축구 25F.JPG' },
       ],
     },
@@ -21,6 +22,7 @@ export default function ChampionsPage() {
       sport: '여자축구',
       emoji: '⚽',
       history: [
+        { season: '26 Spring', winner: '옥지의 축구교실', class: 'Class of 2028', photo: '' }, // 💡 26 Spring 추가
         { season: '25 Fall', winner: '옥지의 축구교실', class: 'Class of 2028', photo: '/champions/여자축구 25F.JPG' },
       ],
     },
@@ -28,7 +30,7 @@ export default function ChampionsPage() {
       sport: '남자농구',
       emoji: '🏀',
       history: [
-        { season: '26 Spring', winner: '빵빵이의 농구교실', class: 'Class of 2028', photo: '' }, // 최신 시즌 위로
+        { season: '26 Spring', winner: '빵빵이의 농구교실', class: 'Class of 2028', photo: '' },
         { season: '25 Fall', winner: '머리 큰 조던', class: 'Class of 2026', photo: '/champions/남자농구 25F.JPG' },
       ],
     },
@@ -36,7 +38,7 @@ export default function ChampionsPage() {
       sport: '여자배구',
       emoji: '🏐',
       history: [
-        { season: '26 Spring', winner: '어~시니어야~', class: 'Class of 2027', photo: '' }, // 최신 시즌 위로
+        { season: '26 Spring', winner: '어~시니어야~', class: 'Class of 2027', photo: '' },
         { season: '25 Fall', winner: '개천에서 용 난다', class: '연합팀', photo: '/champions/여자배구 25F.JPG' },
       ],
     },
