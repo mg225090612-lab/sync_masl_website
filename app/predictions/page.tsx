@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, getSessionUser } from '@/lib/supabase';
+import { cachedQuery, invalidateCache } from '@/lib/cache';
 
 export default function PredictionsPage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -23,53 +24,65 @@ export default function PredictionsPage() {
   ];
 
   useEffect(() => {
-    async function fetchUserAndVotes() {
-      const { data: { user } } = await supabase.auth.getUser();
+    async function loadPage() {
+      // 1. 로그인 유저 확인 (getUser()와 달리 네트워크 요청이 없는 세션 조회)
+      const user = await getSessionUser();
       setCurrentUser(user);
 
-      if (user) {
-        const { data: votes } = await supabase
-          .from('predictions')
-          .select('match_id, predicted_team')
-          .eq('user_id', user.id);
+      // 2. 예측 대상 경기 목록 (2분 캐시: 페이지를 오가도 다시 요청하지 않음)
+      const matchData = await cachedQuery('predictions:matches', 2 * 60 * 1000, async () => {
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-        if (votes) {
-          const voteMap: Record<string, string> = {};
-          votes.forEach(v => { voteMap[v.match_id] = v.predicted_team; });
-          setUserVotes(voteMap);
-        }
-      }
-    }
-    fetchUserAndVotes();
-  }, []);
+        const { data } = await supabase
+          .from('matches')
+          .select('*')
+          .gte('match_date', oneDayAgo.toISOString())
+          .order('match_date', { ascending: true });
+        return data || [];
+      });
 
-  useEffect(() => {
-    async function loadMatches() {
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      setMatches(matchData);
 
-      const { data } = await supabase
-        .from('matches')
-        .select('*')
-        .gte('match_date', oneDayAgo.toISOString())
-        .order('match_date', { ascending: true });
+      const matchIds = matchData.map((m: any) => m.id);
 
-      setMatches(data || []);
+      if (matchIds.length > 0) {
+        // 3. 투표 현황: 예전엔 predictions 테이블 "전체"를 가져왔지만,
+        //    이제 화면에 보이는 경기의 투표만 가져옵니다. (1분 캐시)
+        const allVotes = await cachedQuery('predictions:votes', 60 * 1000, async () => {
+          const { data } = await supabase
+            .from('predictions')
+            .select('match_id, predicted_team')
+            .in('match_id', matchIds);
+          return data || [];
+        });
 
-      // 💡 [추가됨] 전체 투표 현황을 가져와서 퍼센트 계산용 데이터로 변환
-      const { data: allVotes } = await supabase.from('predictions').select('match_id, predicted_team');
-      if (allVotes) {
         const counts: Record<string, Record<string, number>> = {};
-        allVotes.forEach(v => {
+        allVotes.forEach((v: any) => {
           if (!counts[v.match_id]) counts[v.match_id] = {};
           counts[v.match_id][v.predicted_team] = (counts[v.match_id][v.predicted_team] || 0) + 1;
         });
         setVoteCounts(counts);
+
+        // 4. 내 투표 내역도 해당 경기들로 범위를 좁혀서 조회합니다.
+        if (user) {
+          const { data: votes } = await supabase
+            .from('predictions')
+            .select('match_id, predicted_team')
+            .eq('user_id', user.id)
+            .in('match_id', matchIds);
+
+          if (votes) {
+            const voteMap: Record<string, string> = {};
+            votes.forEach(v => { voteMap[v.match_id] = v.predicted_team; });
+            setUserVotes(voteMap);
+          }
+        }
       }
 
       setLoading(false);
     }
-    loadMatches();
+    loadPage();
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -92,6 +105,8 @@ export default function PredictionsPage() {
     });
 
     if (!error) {
+      // 💡 방금 투표했으니 투표 현황 캐시를 비워서, 다음 방문 때 최신 집계를 받게 합니다.
+      invalidateCache('predictions:votes');
       setUserVotes(prev => ({ ...prev, [matchId]: teamName }));
       
       // 💡 [추가됨] 내가 투표하자마자 퍼센트 바가 실시간으로 움직이도록 카운트 증가

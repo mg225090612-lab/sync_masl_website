@@ -2,8 +2,10 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // 💡 원본 대신 리사이즈된 이미지를 캐시해서 제공 (Supabase 요청 절감)
 import { useRouter } from 'next/navigation'; // 💡 useRouter 추가
 import { supabase } from '@/lib/supabase';
+import { cachedQuery, isPhotoMissing, markPhotoMissing } from '@/lib/cache';
 
 interface PageProps {
   params: Promise<{ teamName: string }>;
@@ -19,13 +21,17 @@ export default function TeamPage({ params }: PageProps) {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase
-        .from('players')
-        .select('*')
-        .eq('team_name', teamName)
-        .order('player_number');
+      // 💡 10분 동안 캐시: 팀 페이지를 오갈 때마다 매번 DB에 요청하지 않습니다.
+      const data = await cachedQuery(`players:team:${teamName}`, 10 * 60 * 1000, async () => {
+        const { data } = await supabase
+          .from('players')
+          .select('*')
+          .eq('team_name', teamName)
+          .order('player_number');
+        return data || [];
+      });
 
-      if (data) setPlayers(data);
+      setPlayers(data);
       setLoading(false);
     };
 
@@ -74,7 +80,8 @@ export default function TeamPage({ params }: PageProps) {
 
 // PlayerCard 컴포넌트는 그대로 유지하시면 됩니다!
 function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
-  const [imgError, setImgError] = useState(false);
+  // 💡 사진이 없다고 이미 확인된 선수는 처음부터 요청을 보내지 않습니다.
+  const [imgError, setImgError] = useState(() => isPhotoMissing(p.id));
   const { data } = supabase.storage.from('player-photos').getPublicUrl(`${p.id}.png`);
   const imageUrl = data.publicUrl;
 
@@ -86,11 +93,16 @@ function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
       <div className="relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-white/[0.04] backdrop-blur-xl transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]">
         <div className="aspect-[3/4] flex items-center justify-center relative bg-black/20">
           {!imgError ? (
-            <img 
-              src={imageUrl} 
+            <Image
+              src={imageUrl}
               alt={p.name}
-              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
-              onError={() => setImgError(true)} 
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 200px"
+              className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+              onError={() => {
+                markPhotoMissing(p.id);
+                setImgError(true);
+              }}
             />
           ) : (
             <div className="text-5xl opacity-20 font-black italic">

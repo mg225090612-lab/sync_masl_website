@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, getSessionUser } from '@/lib/supabase';
+import { cachedQuery, invalidateCache } from '@/lib/cache';
 
 export default function GvrRatePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -29,28 +30,29 @@ export default function GvrRatePage() {
 
   // 0. 사용자 확인
   useEffect(() => {
-    async function fetchUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setCurrentUser(user);
-    }
-    fetchUser();
+    // 💡 getUser()는 매번 서버 요청을 보내므로, 네트워크 요청 없는 세션 조회로 교체했습니다.
+    getSessionUser().then(setCurrentUser);
   }, []);
 
   // 1. 최근 2일 경기 로드
   useEffect(() => {
     async function loadMatches() {
-      const twoDaysAgo = new Date();
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      // 💡 2분 동안 캐시: 페이지를 오갈 때마다 경기 목록을 다시 요청하지 않습니다.
+      const data = await cachedQuery('gvr:recent-matches', 2 * 60 * 1000, async () => {
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-      const { data, error } = await supabase
-        .from('matches')
-        .select('*')
-        .gte('match_date', twoDaysAgo.toISOString())
-        .order('match_date', { ascending: false });
+        const { data, error } = await supabase
+          .from('matches')
+          .select('*')
+          .gte('match_date', twoDaysAgo.toISOString())
+          .order('match_date', { ascending: false });
 
-      if (!error && data && data.length > 0) {
+        if (error) throw error;
+        return data || [];
+      }).catch(() => [] as any[]);
+
+      if (data.length > 0) {
         setMatches(data);
         setActiveMatch(data[0]);
       } else {
@@ -68,18 +70,36 @@ export default function GvrRatePage() {
   const loadPlayersWithRatings = useCallback(async () => {
     if (!activeMatch) return;
 
-    const { data: playerData, error: playerError } = await supabase
-      .from('players')
-      .select('*')
-      .or(`team_name.eq."${activeMatch.team_a}",team_name.eq."${activeMatch.team_b}"`);
+    // 💡 선수 명단은 자주 안 바뀌므로 10분 캐시 (View 페이지와 캐시를 공유합니다)
+    // 평점은 1분 캐시 + 내가 등록/수정하면 즉시 캐시를 비우고 새로 받습니다.
+    let playerData: any[] | null = null;
+    let allRatings: any[] | null = null;
 
-    const { data: allRatings, error: ratingError } = await supabase
-      .from('ratings')
-      .select('player_id, score, match_id')
-      .eq('match_id', activeMatch.id);
-
-    if (playerError || ratingError) {
-      console.error(playerError || ratingError);
+    try {
+      [playerData, allRatings] = await Promise.all([
+        cachedQuery(
+          `players:teams:${activeMatch.team_a}|${activeMatch.team_b}`,
+          10 * 60 * 1000,
+          async () => {
+            const { data, error } = await supabase
+              .from('players')
+              .select('*')
+              .in('team_name', [activeMatch.team_a, activeMatch.team_b]);
+            if (error) throw error;
+            return data || [];
+          }
+        ),
+        cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
+          const { data, error } = await supabase
+            .from('ratings')
+            .select('player_id, score, match_id')
+            .eq('match_id', activeMatch.id);
+          if (error) throw error;
+          return data || [];
+        }),
+      ]);
+    } catch (e) {
+      console.error(e);
       return;
     }
 
@@ -201,6 +221,8 @@ export default function GvrRatePage() {
         alert('평점이 등록되었습니다.');
       }
 
+      // 💡 방금 등록/수정했으니 이 경기의 평점 캐시를 비우고 최신 데이터를 받아옵니다.
+      invalidateCache(`ratings:${activeMatch.id}`);
       await loadPlayersWithRatings();
 
       // 저장 후 최신 내 평점 다시 조회
@@ -238,6 +260,8 @@ export default function GvrRatePage() {
       alert('평점이 취소되었습니다.');
       setMyRating(null);
       setRating(null);
+      // 💡 방금 삭제했으니 이 경기의 평점 캐시를 비우고 최신 데이터를 받아옵니다.
+      if (activeMatch) invalidateCache(`ratings:${activeMatch.id}`);
       await loadPlayersWithRatings();
       closeModal();
     } finally {

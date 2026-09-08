@@ -2,7 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // 💡 원본 대신 리사이즈된 이미지를 캐시해서 제공 (Supabase 요청 절감)
 import { supabase } from '@/lib/supabase';
+import { cachedQuery, isPhotoMissing, markPhotoMissing } from '@/lib/cache';
 
 interface PlayerPageProps {
   params: Promise<{ teamName: string; playerId: string }>;
@@ -14,15 +16,20 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
   const playerId = resolvedParams.playerId;
 
   const [player, setPlayer] = useState<any>(null);
-  const [imgError, setImgError] = useState(false);
+  // 💡 사진이 없다고 이미 확인된 선수는 처음부터 요청을 보내지 않습니다.
+  const [imgError, setImgError] = useState(() => isPhotoMissing(playerId));
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase
-        .from('players')
-        .select('*')
-        .eq('id', playerId)
-        .single();
+      // 💡 10분 동안 캐시: 같은 선수를 다시 열어도 DB에 요청하지 않습니다.
+      const data = await cachedQuery(`player:${playerId}`, 10 * 60 * 1000, async () => {
+        const { data } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', playerId)
+          .single();
+        return data;
+      });
 
       if (data) setPlayer(data);
     };
@@ -67,11 +74,16 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
           <div className="md:col-span-5">
             <div className="relative aspect-[3/4] rounded-[3rem] overflow-hidden border border-cyan-400/20 bg-white/[0.02] shadow-[0_0_50px_rgba(34,211,238,0.1)] group">
               {!imgError ? (
-                <img 
-                  src={imageUrl} 
+                <Image
+                  src={imageUrl}
                   alt={player.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  onError={() => setImgError(true)}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 480px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={() => {
+                    markPhotoMissing(playerId);
+                    setImgError(true);
+                  }}
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">

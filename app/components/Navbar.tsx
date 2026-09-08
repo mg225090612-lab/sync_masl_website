@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, getSessionUser } from '@/lib/supabase';
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -10,9 +10,8 @@ export default function Navbar() {
   // 💡 컴포넌트가 마운트될 때 현재 로그인한 유저 정보를 가져옵니다.
   useEffect(() => {
     // 1. 첫 로딩 시 현재 세션 확인
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+    // 💡 getUser()는 매번 서버에 요청을 보내므로, 네트워크 요청이 없는 세션 조회로 교체했습니다.
+    getSessionUser().then(setUser);
 
     // 2. 로그인/로그아웃 상태가 변할 때마다 실시간으로 감지해서 버튼을 바꿔줍니다.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

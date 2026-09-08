@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { cachedQuery } from '@/lib/cache';
 
 type SportTab = '남자축구' | '여자축구' | '남자농구' | '여자배구';
 
@@ -47,19 +48,32 @@ export default function Masl26sPage() {
   useEffect(() => {
     const loadHubData = async () => {
       setLoading(true);
-      const { data: teamData } = await supabase.from('players').select('team_name').eq('category', activeTab);
-      if (teamData) {
-        setTeams(Array.from(new Set(teamData.map(p => p.team_name))));
-      }
 
-      const { data: matchData } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('sport_type', activeTab)
-        .order('round', { ascending: false })
-        .order('match_order', { ascending: true });
+      // 💡 5분 동안 캐시: 종목 탭을 왔다 갔다 해도 이미 본 탭은 DB에 다시 요청하지 않습니다.
+      // 두 쿼리도 순서대로가 아니라 동시에(Promise.all) 실행해서 더 빠릅니다.
+      const { teams: teamList, matches: matchList } = await cachedQuery(
+        `masl-hub:${activeTab}`,
+        5 * 60 * 1000,
+        async () => {
+          const [{ data: teamData }, { data: matchData }] = await Promise.all([
+            supabase.from('players').select('team_name').eq('category', activeTab),
+            supabase
+              .from('matches')
+              .select('*')
+              .eq('sport_type', activeTab)
+              .order('round', { ascending: false })
+              .order('match_order', { ascending: true }),
+          ]);
 
-      setMatches(matchData || []);
+          return {
+            teams: Array.from(new Set((teamData || []).map(p => p.team_name))),
+            matches: matchData || [],
+          };
+        }
+      );
+
+      setTeams(teamList);
+      setMatches(matchList);
       setLoading(false);
     };
     loadHubData();

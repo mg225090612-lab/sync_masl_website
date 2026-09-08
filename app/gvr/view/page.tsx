@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { cachedQuery } from '@/lib/cache';
 
 export default function GvrViewPage() {
   // DB에서 불러온 목록을 담을 상태
@@ -20,10 +21,14 @@ export default function GvrViewPage() {
   // 1. DB에서 모든 시즌과 종목을 가져와서 중복 제거 후 필터 메뉴 생성
   useEffect(() => {
     async function fetchFilters() {
-      const { data } = await supabase
-        .from('matches')
-        .select('season, sport_type')
-        .order('match_date', { ascending: false });
+      // 💡 10분 동안 캐시: 필터 목록(시즌/종목)은 자주 안 바뀌므로 매번 요청하지 않습니다.
+      const data = await cachedQuery('gvr:filters', 10 * 60 * 1000, async () => {
+        const { data } = await supabase
+          .from('matches')
+          .select('season, sport_type')
+          .order('match_date', { ascending: false });
+        return data || [];
+      });
 
       if (data) {
         // 중복 제거해서 고유한 값만 추출 (Set 활용)
@@ -48,14 +53,23 @@ export default function GvrViewPage() {
 
     async function loadMatches() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('season', selectedSeason) 
-        .eq('sport_type', selectedSport) 
-        .order('match_date', { ascending: false });
+      // 💡 5분 동안 캐시: 같은 시즌/종목 조합을 다시 선택해도 요청하지 않습니다.
+      const data = await cachedQuery(
+        `gvr:matches:${selectedSeason}:${selectedSport}`,
+        5 * 60 * 1000,
+        async () => {
+          const { data, error } = await supabase
+            .from('matches')
+            .select('*')
+            .eq('season', selectedSeason)
+            .eq('sport_type', selectedSport)
+            .order('match_date', { ascending: false });
+          if (error) throw error;
+          return data || [];
+        }
+      ).catch(() => [] as any[]);
 
-      if (!error && data && data.length > 0) {
+      if (data && data.length > 0) {
         setMatches(data);
         setActiveMatch(data[0]); // 첫 번째 경기 자동 선택
       } else {
@@ -75,15 +89,27 @@ export default function GvrViewPage() {
       return;
     }
 
-    const { data: playerData } = await supabase
-      .from('players')
-      .select('*')
-      .in('team_name', [activeMatch.team_a, activeMatch.team_b]);
-
-    const { data: allRatings } = await supabase
-      .from('ratings')
-      .select('player_id, score, match_id')
-      .eq('match_id', activeMatch.id);
+    // 💡 Rate 페이지와 같은 캐시 키를 사용해서, 두 페이지를 오가도 요청이 중복되지 않습니다.
+    const [playerData, allRatings] = await Promise.all([
+      cachedQuery(
+        `players:teams:${activeMatch.team_a}|${activeMatch.team_b}`,
+        10 * 60 * 1000,
+        async () => {
+          const { data } = await supabase
+            .from('players')
+            .select('*')
+            .in('team_name', [activeMatch.team_a, activeMatch.team_b]);
+          return data || [];
+        }
+      ),
+      cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
+        const { data } = await supabase
+          .from('ratings')
+          .select('player_id, score, match_id')
+          .eq('match_id', activeMatch.id);
+        return data || [];
+      }),
+    ]);
 
     if (playerData) {
       const playersWithAvg = playerData.map((player) => {
