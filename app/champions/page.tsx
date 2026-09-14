@@ -47,43 +47,33 @@ export default function ChampionsPage() {
   const filteredData = hallOfFame.filter((item) => item.sport === activeTab);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06101f] text-white pt-32 px-6 pb-20">
-      {/* 배경 레이어 */}
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
-      <div className="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
-      
-      {/* 헤더 섹션 */}
-      <div className="max-w-5xl mx-auto mb-16">
-        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1.5 text-[11px] font-semibold tracking-[0.25em] uppercase text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.15)]">
-          Neon Archive
-        </div>
+    <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
+      {/* 페이지 헤더 (spec §5.3) */}
+      <header className="mb-10 border-b border-edge pb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
+          MASL Hall of Fame
+        </p>
+        <h1 className="mt-3 font-display text-4xl font-semibold uppercase leading-[1.1] text-fg md:text-6xl">
+          Champions
+        </h1>
+        <p className="mt-4 max-w-xl text-[15px] leading-[1.65] text-fg-mid">
+          Official archive of MASL champions. Exploring the future legacy of sports.
+        </p>
+      </header>
 
-        <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-5xl md:text-8xl font-black italic tracking-[-0.05em] leading-none text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-lime-300 drop-shadow-[0_0_24px_rgba(34,211,238,0.18)] uppercase">
-              Champions
-            </h1>
-            <div className="mt-5 h-[3px] w-28 rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-lime-400 shadow-[0_0_20px_rgba(34,211,238,0.55)]" />
-          </div>
-          <p className="max-w-md text-sm md:text-right text-white/55 leading-relaxed italic">
-            Official archive of MASL champions. Exploring the future legacy of sports.
-          </p>
-        </div>
-      </div>
-
-      {/* 종목 탭 */}
-      <div className="max-w-5xl mx-auto mb-12 flex gap-3 overflow-x-auto no-scrollbar">
+      {/* 종목 탭 (spec §5.9) */}
+      <div className="mb-8 flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {sportsTabs.map((tab) => {
           const isActive = activeTab === tab;
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative whitespace-nowrap rounded-full px-6 py-3.5 text-sm font-black transition-all duration-300 border italic uppercase tracking-wider ${
+              className={
                 isActive
-                  ? 'border-cyan-300/60 bg-gradient-to-r from-cyan-300 to-lime-300 text-[#04111d] shadow-[0_0_20px_rgba(103,232,249,0.45)] scale-105'
-                  : 'border-white/10 bg-white/[0.04] text-white/65 hover:border-cyan-400/30 hover:bg-cyan-400/[0.06] hover:text-white'
-              }`}
+                  ? 'h-10 shrink-0 whitespace-nowrap rounded-full bg-fg px-5 text-sm font-semibold text-canvas'
+                  : 'h-10 shrink-0 whitespace-nowrap rounded-full border border-edge bg-transparent px-5 text-sm font-medium text-fg-mid transition-colors hover:border-edge-strong hover:text-fg'
+              }
             >
               {tab}
             </button>
@@ -91,90 +81,104 @@ export default function ChampionsPage() {
         })}
       </div>
 
-      {/* 우승 카드 리스트 (정렬된 결과) */}
-      <div className="max-w-5xl mx-auto grid gap-6">
+      {/* 우승 카드 리스트 (spec §5.5 clickable card) */}
+      <div className="grid gap-3">
         {filteredData.map((item) =>
           item.history.map((record, idx) => (
-            <div
+            <button
               key={idx}
               onClick={() => setSelectedWinner(record)}
-              className="group relative cursor-pointer overflow-hidden rounded-[30px] border border-cyan-400/10 bg-white/[0.045] p-7 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300/30 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)]"
+              className="w-full rounded-xl border border-edge bg-surface p-5 text-left transition-colors hover:border-edge-strong hover:bg-raised md:p-6"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/[0.08] via-transparent to-lime-400/[0.07] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="absolute inset-y-0 left-0 w-[4px] bg-gradient-to-b from-cyan-300 via-sky-400 to-lime-300 shadow-[0_0_16px_rgba(34,211,238,0.7)]" />
-
-              <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-start gap-5">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/20 bg-[#0a1b31] text-3xl shadow-inner shadow-cyan-400/10">
+              <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-raised text-2xl">
                     {item.emoji}
-                  </div>
-                  <div>
-                    <p className="text-[11px] tracking-[0.3em] uppercase text-cyan-300/80 font-black italic">
+                  </span>
+                  <div className="min-w-0">
+                    {/* 시즌 배지 (spec §5.11 neutral) */}
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-2.5 py-1 text-xs font-semibold text-fg-mid">
                       {record.season}
-                    </p>
-                    <h3 className="mt-2 text-2xl md:text-4xl font-black italic tracking-tight text-white uppercase">
+                    </span>
+                    <h3 className="mt-2 truncate text-xl font-bold leading-[1.3] tracking-[-0.01em] text-fg md:text-2xl">
                       {record.winner}
                     </h3>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-6">
-                  <span className="rounded-full border border-lime-300/20 bg-lime-300/10 px-5 py-2 text-[11px] font-black tracking-widest text-lime-200 uppercase">
+                <div className="flex shrink-0 items-center justify-between gap-4 md:justify-end">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-2.5 py-1 text-xs font-semibold text-fg-mid">
                     {record.class}
                   </span>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-3xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
-                    🏆
-                  </div>
+                  {record.photo ? (
+                    <img
+                      src={record.photo}
+                      alt={record.winner}
+                      className="h-14 w-20 shrink-0 rounded-lg border border-edge object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-raised text-xl">
+                      🏆
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
+            </button>
           ))
         )}
       </div>
 
-      {/* 우승자 상세 모달 */}
+      {/* 우승자 상세 모달 (spec §5.13) */}
       {selectedWinner && (
         <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-[#020611]/90 backdrop-blur-xl px-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => setSelectedWinner(null)}
         >
           <div
-            className="relative w-full max-w-lg overflow-hidden rounded-[40px] border border-cyan-300/20 bg-[#081426] p-10 shadow-[0_0_80px_rgba(0,0,0,0.5)]"
+            className="overlay-pop relative w-full max-w-lg rounded-2xl border border-edge bg-raised p-6 shadow-xl shadow-black/50 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.15),transparent_40%)]" />
+            <button
+              onClick={() => setSelectedWinner(null)}
+              aria-label="닫기"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-fg-dim transition-colors hover:bg-surface hover:text-fg"
+            >
+              ✕
+            </button>
 
-            <div className="relative z-10 text-center">
-              <p className="text-xs tracking-[0.4em] uppercase text-cyan-400 font-black italic mb-2">
-                {selectedWinner.season} Champion
-              </p>
-              <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter text-white uppercase mb-4 leading-tight">
-                {selectedWinner.winner}
-              </h2>
-              <p className="text-sm font-bold text-white/40 tracking-[0.2em] mb-8">{selectedWinner.class}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
+              {selectedWinner.season} Champion
+            </p>
+            <h2 className="mt-2 text-2xl font-bold leading-[1.3] tracking-[-0.01em] text-fg md:text-3xl">
+              {selectedWinner.winner}
+            </h2>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-2.5 py-1 text-xs font-semibold text-fg-mid">
+              {selectedWinner.class}
+            </span>
 
-              <div className="relative aspect-video w-full overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.02] shadow-2xl flex items-center justify-center">
+            <div className="mt-6 space-y-6">
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-edge bg-surface">
                 {selectedWinner.photo ? (
-                  <img 
-                    src={selectedWinner.photo} 
-                    alt={selectedWinner.winner} 
-                    className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+                  <img
+                    src={selectedWinner.photo}
+                    alt={selectedWinner.winner}
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300/20 to-lime-300/20 text-7xl shadow-[0_0_40px_rgba(34,211,238,0.2)]">
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-3">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-raised text-3xl">
                       🏆
-                    </div>
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Victory Photo Pending</p>
+                    </span>
+                    <p className="text-sm font-medium text-fg-dim">우승 사진 준비 중입니다.</p>
                   </div>
                 )}
               </div>
 
               <button
                 onClick={() => setSelectedWinner(null)}
-                className="mt-10 w-full rounded-2xl bg-gradient-to-r from-cyan-300 to-lime-300 py-5 text-sm font-black tracking-[0.3em] text-[#03101b] transition-all hover:brightness-110 active:scale-95 shadow-[0_0_30px_rgba(34,211,238,0.3)]"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-edge-strong bg-transparent px-5 text-sm font-semibold text-fg transition-colors hover:bg-surface active:opacity-90 disabled:pointer-events-none disabled:opacity-50"
               >
-                CLOSE ARCHIVE
+                닫기
               </button>
             </div>
           </div>

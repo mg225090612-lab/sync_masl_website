@@ -1,0 +1,26 @@
+# 💡 Supabase 자동 일시정지 방지용 keep-alive.
+# 매일 한 번 DB에 가벼운 조회를 보내 "이 프로젝트 살아있음"을 알립니다.
+# 사이트가 어디에 배포되어 있든(또는 배포가 없어도) GitHub이 대신 실행해줍니다.
+#
+# 아래 키는 NEXT_PUBLIC_SUPABASE_ANON_KEY — 원래 사이트 방문자 모두에게 공개되는
+# 클라이언트용 공개 키라서 저장소에 넣어도 보안 문제가 없습니다.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # 매일 03:17 UTC = 한국시간 낮 12:17
+  workflow_dispatch: # Actions 탭에서 수동 실행도 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        env:
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5bHNzb29iYm5pd2NzcWtrb3FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDQ1ODcsImV4cCI6MjA4OTU4MDU4N30.bxaN6jhsB-7ODs9hzkLqAvgJwxsSZpohBNGiPntwMBw
+        run: |
+          curl -sf "https://qylssoobbniwcsqkkoqk.supabase.co/rest/v1/matches?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" > /dev/null
+          echo "Supabase ping OK"

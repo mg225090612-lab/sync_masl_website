@@ -1,76 +1,70 @@
 @import "tailwindcss";
 
-:root {
-  --background: #040b16;
-  --foreground: #f4fbff;
+/* ── Matchnight Broadcast v2 — color tokens (spec §2) ─────────────────── */
+@theme {
+  /* background layers */
+  --color-canvas: #0B0D12; /* page background (bg-canvas)            */
+  --color-surface: #12151C; /* card / panel (bg-surface)              */
+  --color-raised: #1A1E27; /* elevated: dropdown, modal, chip wells  */
 
-  --navy-950: #040b16;
-  --navy-900: #06101f;
-  --navy-800: #081426;
-  --navy-700: #0c1c33;
+  /* borders */
+  --color-edge: #262B36; /* default 1px hairline (border-edge)     */
+  --color-edge-strong: #39404E; /* hover / emphasized border              */
 
-  --neon-cyan: #67e8f9;
-  --neon-sky: #38bdf8;
-  --neon-lime: #bef264;
-  --neon-green: #7cffb2;
+  /* text tiers */
+  --color-fg: #EDEFF3; /* primary   — 16.6:1 on canvas           */
+  --color-fg-mid: #A9B1BD; /* secondary —  8.9:1 canvas, 8.6 surface */
+  --color-fg-dim: #808A9A; /* muted     —  5.4:1 canvas, 4.7 raised  */
 
-  --muted: rgba(255, 255, 255, 0.64);
-  --border-soft: rgba(255, 255, 255, 0.1);
-  --panel: rgba(255, 255, 255, 0.05);
-  --panel-strong: rgba(255, 255, 255, 0.08);
+  /* primary accent — signal blue */
+  --color-accent: #0EA5E9; /* fills (buttons, bars, active ticks)    */
+  --color-accent-bright: #38BDF8; /* hover fill + accent-colored TEXT (9:1) */
+
+  /* supporting accent — away team / second data series ONLY */
+  --color-away: #FBBF24; /* 11.6:1 on canvas                       */
+
+  /* semantic */
+  --color-danger: #F87171; /* destructive actions, LIVE dot (6.8:1)  */
 }
 
+/* ── Font tokens (spec §3.1) — inline so the next/font runtime variable
+      (--font-oswald) resolves at run time ────────────────────────────── */
+@theme inline {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI",
+    Roboto, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --font-display: var(--font-oswald), "Arial Narrow", "Helvetica Neue",
+    sans-serif;
+}
+
+/* ── Base CSS (spec §4) ───────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   margin: 0;
-  color: var(--foreground);
-  background:
-    radial-gradient(circle at top left, rgba(103, 232, 249, 0.10), transparent 24%),
-    radial-gradient(circle at top right, rgba(190, 242, 100, 0.08), transparent 20%),
-    radial-gradient(circle at bottom, rgba(56, 189, 248, 0.10), transparent 28%),
-    linear-gradient(180deg, #040b16 0%, #06101f 45%, #081426 100%);
-  font-family: Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  word-break: keep-all; /* Korean word-boundary wrapping */
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* selection */
 ::selection {
-  background: rgba(103, 232, 249, 0.28);
-  color: white;
+  background: rgba(14, 165, 233, 0.35);
 }
 
-/* scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(103, 232, 249, 0.8), rgba(190, 242, 100, 0.8));
+  background: #39404E;
   border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(103, 232, 249, 1), rgba(190, 242, 100, 1));
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-/* utility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -79,74 +73,11 @@ body {
   scrollbar-width: none;
 }
 
-/* neon helpers */
-.neon-text {
-  text-shadow:
-    0 0 8px rgba(103, 232, 249, 0.35),
-    0 0 24px rgba(103, 232, 249, 0.16);
-}
-
-.neon-border {
-  border: 1px solid rgba(103, 232, 249, 0.22);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 0 24px rgba(103, 232, 249, 0.08);
-}
-
-.neon-panel {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.035)
-  );
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(103, 232, 249, 0.12);
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.25),
-    0 0 32px rgba(103, 232, 249, 0.05);
-}
-
-.neon-button {
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-lime));
-  color: #03101b;
-  font-weight: 800;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  box-shadow: 0 0 24px rgba(103, 232, 249, 0.24);
-}
-
-.neon-button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.04);
-  box-shadow: 0 0 30px rgba(124, 255, 178, 0.22);
-}
-
-.neon-button:active {
-  transform: scale(0.985);
-}
-
-.grid-bg {
-  position: relative;
-}
-
-.grid-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 34px 34px;
-  opacity: 0.08;
-}
-
-/* links */
 a {
   color: inherit;
   text-decoration: none;
 }
 
-/* inputs */
 input,
 button,
 textarea,
@@ -154,18 +85,36 @@ select {
   font: inherit;
 }
 
-input,
-textarea,
-select {
-  outline: none;
+/* replaces v1's `input, textarea, select { outline: none; }` —
+   keyboard focus must be visible */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
-/* optional glass card baseline */
-.glass-card {
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(18px);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.28),
-    0 0 20px rgba(103, 232, 249, 0.05);
+/* ── Overlay entrance utility (spec §6) ───────────────────────────────────
+   NOTE for page agents: the tailwindcss-animate plugin is NOT installed in
+   this project, so `animate-in fade-in zoom-in-95 slide-in-*` classes are
+   silent no-ops — do not use them. For modal/dropdown entrances add the
+   `overlay-pop` class instead: 160ms opacity + 4px rise, ease-out, with the
+   reduced-motion guard built in. It re-runs each time the element goes from
+   `hidden` (or unmounted) to displayed, so it works with `group-hover:block`
+   dropdowns and conditionally-rendered modals alike. */
+@keyframes overlay-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.overlay-pop {
+  animation: overlay-pop 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay-pop {
+    animation: none;
+  }
 }

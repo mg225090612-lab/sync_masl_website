@@ -1,12 +1,27 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { cachedQuery, invalidateCache } from '@/lib/cache';
 
+// 페이지 헤더 (spec §5.3) — 로딩/완료 상태에서 공유
+function PageHeader() {
+  return (
+    <header className="mb-10 border-b border-edge pb-8">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
+        GVR · Player Ratings
+      </p>
+      <h1 className="mt-3 font-display text-4xl font-semibold uppercase leading-[1.1] text-fg md:text-6xl">
+        Rate Players
+      </h1>
+      <p className="mt-4 max-w-xl text-[15px] leading-[1.65] text-fg-mid">
+        최근 2일 이내에 진행된 경기를 선택하고, 선수들의 활약에 평점을 남겨 보세요.
+      </p>
+    </header>
+  );
+}
+
 export default function GvrRatePage() {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
   const [activeMatch, setActiveMatch] = useState<any>(null);
   const [players, setPlayers] = useState<any[]>([]);
@@ -21,12 +36,6 @@ export default function GvrRatePage() {
   // 현재 유저가 선택한 선수에게 이미 준 rating row
   const [myRating, setMyRating] = useState<any>(null);
   const [checkingMyRating, setCheckingMyRating] = useState(false);
-
-  const navMenus = [
-    { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
-    { title: 'GVR', path: '/gvr/rate', sub: [{ name: 'Rate Players', path: '/gvr/rate' }, { name: 'View Results', path: '/gvr/view' }] },
-    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] },
-  ];
 
   // 0. 사용자 확인
   useEffect(() => {
@@ -164,7 +173,7 @@ export default function GvrRatePage() {
     setRating(null);
   };
 
- // 4. 등록 또는 수정
+  // 4. 등록 또는 수정
   const handleSubmit = async () => {
     if (!currentUser) {
       alert('로그인이 필요한 서비스입니다.');
@@ -191,9 +200,9 @@ export default function GvrRatePage() {
         // 🔥 2. "수정"할 때도 이메일을 무조건 덮어씌워줍니다! (이게 빠져있었음)
         const { error } = await supabase
           .from('ratings')
-          .update({ 
+          .update({
             score: rating,
-            user_email: userEmail 
+            user_email: userEmail
           })
           .eq('id', myRating.id);
 
@@ -269,151 +278,148 @@ export default function GvrRatePage() {
     }
   };
 
+  // 로딩: 최종 레이아웃과 같은 모양의 스켈레톤 (spec §5.14)
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#06101f] pt-48 text-center text-cyan-300 font-black animate-pulse uppercase">
-        Syncing Database...
+      <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
+        <PageHeader />
+        <div className="no-scrollbar mb-12 flex gap-3 overflow-x-auto pb-1">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-[88px] w-64 shrink-0 animate-pulse rounded-xl border border-edge bg-surface" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+          {[0, 1].map((col) => (
+            <div key={col} className="grid gap-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-[72px] animate-pulse rounded-xl border border-edge bg-surface" />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen bg-[#06101f] px-6 pb-20 pt-48 text-white font-sans overflow-x-hidden">
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl px-6 flex h-20 items-center justify-start gap-12 text-[11px] font-black uppercase tracking-widest">
-          {navMenus.map((menu) => (
-            <div
-              key={menu.title}
-              className="relative group py-7"
-              onMouseEnter={() => setActiveMenu(menu.title)}
-              onMouseLeave={() => setActiveMenu(null)}
-            >
-              <button className={`transition-all ${activeMenu === menu.title ? 'text-cyan-400' : 'text-white/40'}`}>
-                {menu.title}
-              </button>
-              <div
-                className={`absolute left-0 top-[80%] w-48 rounded-2xl border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-2xl transition-all duration-300 ${
-                  activeMenu === menu.title
-                    ? 'visible opacity-100 translate-y-2'
-                    : 'invisible opacity-0 translate-y-0'
+    <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
+      <PageHeader />
+
+      {/* 경기 선택 — 가로 스트립 카드 (spec §5.5, 활성 = featured 보더) */}
+      {matches.length > 0 ? (
+        <div className="no-scrollbar mb-12 flex gap-3 overflow-x-auto pb-1">
+          {matches.map((m) => {
+            const isActive = activeMatch?.id === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => {
+                  setActiveMatch(m);
+                  closeModal();
+                }}
+                className={`flex w-60 shrink-0 flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+                  isActive
+                    ? 'border-accent/30 bg-accent/10'
+                    : 'border-edge bg-surface hover:border-edge-strong hover:bg-raised'
                 }`}
               >
-                {menu.sub.map((s) => (
-                  <Link
-                    key={s.name}
-                    href={s.path}
-                    className="block rounded-xl px-4 py-3 text-white/60 hover:text-cyan-300 hover:bg-white/5"
-                  >
-                    {s.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
+                <span
+                  className={
+                    isActive
+                      ? 'text-xs font-semibold text-accent-bright'
+                      : 'text-xs font-medium text-fg-dim'
+                  }
+                >
+                  {m.sport_type}
+                </span>
+                <span
+                  className={`w-full truncate text-sm font-semibold ${
+                    isActive ? 'text-fg' : 'text-fg-mid'
+                  }`}
+                >
+                  {m.team_a} <span className="font-medium text-fg-dim">vs</span> {m.team_b}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </nav>
-
-      <div className="mx-auto max-w-6xl relative z-10">
-        <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-16 leading-none">
-          Rate <span className="bg-gradient-to-r from-cyan-300 to-lime-300 bg-clip-text text-transparent">Players</span>
-        </h1>
-
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-10 mb-10 border-b border-white/5">
-          {matches.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => {
-                setActiveMatch(m);
-                closeModal();
-              }}
-              className={`flex flex-col rounded-[2.5rem] border px-10 py-6 min-w-[300px] transition-all text-left ${
-                activeMatch?.id === m.id
-                  ? 'border-cyan-400 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.2)]'
-                  : 'border-white/5 bg-white/5 opacity-40 hover:opacity-100 hover:bg-white/10'
-              }`}
-            >
-              <span className="text-[10px] font-black text-cyan-400/60 mb-2 uppercase tracking-widest italic">
-                {m.sport_type}
-              </span>
-              <span className="font-black italic text-xl uppercase tracking-tighter mb-1 leading-tight">
-                {m.team_a} <br />
-                vs {m.team_b}
-              </span>
-            </button>
-          ))}
-
-          {matches.length === 0 && (
-            <div className="flex items-center justify-center w-full py-6 text-white/30 font-black italic text-sm tracking-widest uppercase">
-              최근 2일 이내에 진행된 경기가 없습니다.
-            </div>
-          )}
+      ) : (
+        // 경기 없음 — 빈 상태 (spec §5.14)
+        <div className="rounded-xl border border-dashed border-edge bg-surface/50 px-6 py-14 text-center">
+          <p className="text-[15px] font-semibold text-fg-mid">최근 2일 이내에 진행된 경기가 없습니다.</p>
+          <p className="mt-1 text-sm text-fg-dim">경기가 끝난 뒤 이틀 동안 평점을 남길 수 있어요.</p>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {activeMatch && (
-            <>
-              <TeamList
-                title={activeMatch.team_a}
-                players={players.filter((p) => p.team_name === activeMatch.team_a)}
-                onSelect={setSelectedPlayer}
-              />
-              <TeamList
-                title={activeMatch.team_b}
-                players={players.filter((p) => p.team_name === activeMatch.team_b)}
-                onSelect={setSelectedPlayer}
-                isAway
-              />
-            </>
-          )}
+      {/* 두 팀 로스터 */}
+      {activeMatch && (
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+          <TeamList
+            title={activeMatch.team_a}
+            players={players.filter((p) => p.team_name === activeMatch.team_a)}
+            onSelect={setSelectedPlayer}
+          />
+          <TeamList
+            title={activeMatch.team_b}
+            players={players.filter((p) => p.team_name === activeMatch.team_b)}
+            onSelect={setSelectedPlayer}
+            isAway
+          />
         </div>
-      </div>
+      )}
 
+      {/* 평점 모달 (spec §5.13) */}
       {selectedPlayer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md shadow-inner" onClick={closeModal}></div>
-
-          <div className="relative w-full max-w-xl rounded-[45px] border border-white/10 bg-[#0b1730] p-10 md:p-14 shadow-[0_0_120px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={closeModal}
+        >
+          <div
+            className="overlay-pop relative w-full max-w-lg rounded-2xl border border-edge bg-raised p-6 shadow-xl shadow-black/50 md:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={closeModal}
-              className="absolute top-10 right-10 text-2xl text-white/20 hover:text-white transition-colors"
+              aria-label="닫기"
+              className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-fg-dim transition-colors hover:bg-surface hover:text-fg"
             >
               ✕
             </button>
 
-            <p className="text-cyan-400 font-black tracking-[0.3em] uppercase mb-4 italic text-sm text-center">
-              {selectedPlayer.team_name}
-            </p>
+            {/* 팀 이름은 한국어 → uppercase/tracking 없음 */}
+            <p className="text-xs font-semibold text-accent-bright">{selectedPlayer.team_name}</p>
 
-            <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter mb-12 text-center leading-none">
+            <h2 className="mt-2 text-2xl font-bold leading-[1.3] tracking-[-0.01em] text-fg md:text-3xl">
               NO.{selectedPlayer.player_number} {selectedPlayer.name}
             </h2>
 
-            <div className="space-y-10">
-              <div className="space-y-4">
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-center">
+            <div className="mt-6 space-y-6">
+              {/* 읽기 전용 이메일 필드 (spec §5.10) */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">
                   Authenticated User
                 </p>
-                <div className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-xl font-black text-center text-cyan-300/80">
+                <div className="w-full rounded-lg border border-edge bg-canvas px-4 py-3 text-center text-sm font-medium text-fg-mid">
                   {currentUser ? currentUser.email : 'Login Required'}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] text-center">
+              {/* 평점 그리드 (spec §5.13) */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">
                   Rating Score
                 </p>
-
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                   {[7, 7.5, 8, 8.5, 9, 9.5, 10].map((v) => (
                     <button
                       key={v}
                       onClick={() => setRating(v)}
                       disabled={checkingMyRating || submitting}
-                      className={`py-4 rounded-xl border font-black italic text-sm transition-all ${
+                      className={
                         rating === v
-                          ? 'border-cyan-400 bg-cyan-400 text-black shadow-lg shadow-cyan-400/40'
-                          : 'border-white/10 bg-white/5 text-white/30 hover:border-white/30'
-                      }`}
+                          ? 'h-12 rounded-lg bg-accent text-sm font-semibold tabular-nums text-canvas'
+                          : 'h-12 rounded-lg border border-edge bg-surface text-sm font-semibold tabular-nums text-fg-mid transition-colors hover:border-edge-strong hover:text-fg'
+                      }
                     >
                       {v.toFixed(1)}
                     </button>
@@ -422,21 +428,22 @@ export default function GvrRatePage() {
               </div>
 
               {myRating && (
-                <div className="rounded-2xl border border-lime-400/20 bg-lime-400/10 px-5 py-4 text-center">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-lime-300/80 mb-1">
+                <div className="flex items-center justify-between rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
                     Your Current Rating
                   </p>
-                  <p className="text-2xl font-black italic text-lime-300">
+                  <p className="font-display text-xl font-medium leading-none tabular-nums text-fg">
                     {Number(myRating.score).toFixed(1)}
                   </p>
                 </div>
               )}
 
               <div className="space-y-3">
+                {/* 제출 — 프라이머리 버튼 (spec §5.7) */}
                 <button
                   onClick={handleSubmit}
                   disabled={submitting || checkingMyRating}
-                  className="w-full py-7 rounded-[2.2rem] bg-gradient-to-r from-cyan-300 to-lime-300 text-black font-black italic uppercase text-xl tracking-[0.1em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:hover:scale-100"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 text-sm font-semibold text-canvas transition-colors hover:bg-accent-bright active:opacity-90 disabled:pointer-events-none disabled:opacity-50"
                 >
                   {submitting
                     ? 'Processing...'
@@ -445,11 +452,12 @@ export default function GvrRatePage() {
                     : 'Submit Rating'}
                 </button>
 
+                {/* 취소 — 데인저 버튼 (spec §5.8) */}
                 {myRating && (
                   <button
                     onClick={handleDelete}
                     disabled={submitting}
-                    className="w-full py-5 rounded-[1.6rem] border border-red-400/30 bg-red-500/10 text-red-300 font-black italic uppercase tracking-[0.1em] hover:bg-red-500/20 transition-all disabled:opacity-60"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-5 text-sm font-semibold text-danger transition-colors hover:bg-danger/20 disabled:pointer-events-none disabled:opacity-50"
                   >
                     Cancel Rating
                   </button>
@@ -465,32 +473,37 @@ export default function GvrRatePage() {
 
 function TeamList({ title, players, onSelect, isAway = false }: any) {
   return (
-    <div className={isAway ? 'text-right' : 'text-left'}>
-      <h3 className={`mb-12 text-4xl font-black italic uppercase tracking-tighter ${isAway ? 'text-lime-400' : 'text-cyan-300'}`}>
-        {title}
-      </h3>
-      <div className="grid gap-6">
+    <section>
+      {/* 팀 헤더 — 섹션 타이틀 (spec §5.4); 어웨이 팀은 틱 바에만 어웨이 색 */}
+      <div className="mb-6 flex items-center gap-3">
+        <span className={`h-4 w-1 shrink-0 rounded-full ${isAway ? 'bg-away' : 'bg-accent'}`} />
+        <h2 className="min-w-0 truncate text-xl font-bold leading-[1.3] tracking-[-0.01em] text-fg md:text-2xl">
+          {title}
+        </h2>
+        <span className="shrink-0 text-sm font-medium tabular-nums text-fg-dim">{players.length}</span>
+      </div>
+
+      {/* 선수 행 (spec §5.6) */}
+      <div className="grid gap-3">
         {players.map((p: any) => (
           <button
             key={p.id}
             onClick={() => onSelect(p)}
-            className={`flex items-center justify-between gap-6 p-8 rounded-[3.5rem] border border-white/5 bg-white/[0.03] transition-all hover:bg-white/[0.07] hover:border-white/10 group ${
-              isAway ? 'flex-row-reverse' : ''
-            }`}
+            className="flex w-full items-center justify-between gap-4 rounded-xl border border-edge bg-surface px-4 py-3.5 text-left transition-colors hover:border-edge-strong hover:bg-raised"
           >
-            <div className={`flex items-center gap-8 ${isAway ? 'flex-row-reverse' : ''}`}>
-              <div className="h-20 w-20 rounded-[1.8rem] bg-black/40 flex items-center justify-center font-black italic text-3xl text-cyan-400 group-hover:text-white transition-colors">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-raised font-display text-base font-medium tabular-nums text-fg-mid">
                 {p.player_number}
-              </div>
-              <p className="font-black italic text-3xl uppercase tracking-tighter">{p.name}</p>
+              </span>
+              <span className="truncate text-[15px] font-semibold text-fg">{p.name}</span>
             </div>
-            <div className="flex flex-col items-center px-6 min-w-[120px]">
-              <span className="text-[10px] font-black text-white/20 uppercase mb-1">AVG</span>
-              <span className="text-2xl font-black italic text-yellow-400">⭐ {p.avgRating}</span>
+            <div className="flex shrink-0 items-baseline gap-1.5">
+              <span className="font-display text-xl font-medium tabular-nums text-fg">{p.avgRating}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">AVG</span>
             </div>
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

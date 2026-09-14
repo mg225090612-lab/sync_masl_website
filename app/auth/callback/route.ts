@@ -6,6 +6,10 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
 
+  // 💡 로그인 후 돌아갈 경로 (?next=/admin 같은 형태). 외부 주소로는 못 나가게 '/'로 시작할 때만 허용.
+  const rawNext = searchParams.get('next');
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+
   if (code) {
     const cookieStore = await cookies();
     
@@ -38,11 +42,11 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}/`);
+      return NextResponse.redirect(`${origin}${next}`);
     } else {
       console.error('Auth Error:', error.message);
     }
   }
 
-  return NextResponse.redirect(`${origin}/`);
+  return NextResponse.redirect(`${origin}${next}`);
 }

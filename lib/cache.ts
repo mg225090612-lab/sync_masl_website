@@ -116,3 +116,14 @@ export function markPhotoMissing(playerId: string | number) {
     // 무시
   }
 }
+
+// 사진을 새로 업로드했을 때 "없음" 기록을 지워서 다시 요청하게 합니다.
+export function clearPhotoMissing(playerId: string | number) {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = readMissingPhotos().filter(id => id !== String(playerId));
+    sessionStorage.setItem(MISSING_PHOTOS_KEY, JSON.stringify(list));
+  } catch {
+    // 무시
+  }
+}

@@ -1,27 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { cachedQuery, invalidateCache } from '@/lib/cache';
+import TeamLogo from '@/app/components/TeamLogo';
 
 export default function PredictionsPage() {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
-  
+
   // 💡 [추가됨] 모든 유저의 투표 수를 저장하는 상태
   const [voteCounts, setVoteCounts] = useState<Record<string, Record<string, number>>>({});
-
-  const navMenus = [
-    { title: 'MASL', path: '/', sub: [{ name: '26 Spring Hub', path: '/masl/26s' }] },
-    { title: 'GVR', path: '/gvr/rate', sub: [{ name: 'Rate Players', path: '/gvr/rate' }, { name: 'View Results', path: '/gvr/view' }] },
-    { title: 'Champions', path: '/champions', sub: [{ name: 'Tournament Bracket', path: '/champions/bracket' }] },
-    { title: 'Predictions', path: '/predictions', sub: [{ name: 'Match Predict', path: '/predictions' }] }
-  ];
 
   useEffect(() => {
     async function loadPage() {
@@ -85,15 +77,6 @@ export default function PredictionsPage() {
     loadPage();
   }, []);
 
-  const handleGoogleLogin = async () => {
-    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: redirectUrl },
-    });
-    if (error) alert('로그인 에러: ' + error.message);
-  };
-
   const handleVote = async (matchId: string, teamName: string) => {
     if (!currentUser) return alert('로그인이 필요합니다. 우측 상단에서 로그인해주세요.');
     if (userVotes[matchId]) return alert('이미 이 경기에 투표하셨습니다.');
@@ -108,7 +91,7 @@ export default function PredictionsPage() {
       // 💡 방금 투표했으니 투표 현황 캐시를 비워서, 다음 방문 때 최신 집계를 받게 합니다.
       invalidateCache('predictions:votes');
       setUserVotes(prev => ({ ...prev, [matchId]: teamName }));
-      
+
       // 💡 [추가됨] 내가 투표하자마자 퍼센트 바가 실시간으로 움직이도록 카운트 증가
       setVoteCounts(prev => {
         const matchCounts = prev[matchId] || {};
@@ -120,176 +103,157 @@ export default function PredictionsPage() {
           }
         };
       });
-      
+
       alert(`[${teamName}] 승리에 투표하셨습니다!`);
     } else {
       alert('투표 실패: ' + error.message);
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#06101f] pt-48 text-center text-cyan-300 font-black animate-pulse uppercase">Syncing Matches...</div>;
-
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#06101f] px-6 pb-32 pt-48 text-white font-sans">
-      
-      {/* 🌐 TOP NAVIGATION BAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#06101f]/60 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 h-20 flex items-center justify-between w-full">
-          <div className="flex items-center gap-4 md:gap-12">
-            {navMenus.map((menu) => (
-              <div key={menu.title} className="relative group py-7" onMouseEnter={() => setActiveMenu(menu.title)} onMouseLeave={() => setActiveMenu(null)}>
-                <button className={`text-xs md:text-sm font-black tracking-widest transition-all uppercase ${activeMenu === menu.title || menu.title === 'Predictions' ? 'text-cyan-400' : 'text-white/40 group-hover:text-white'}`}>
-                  {menu.title}
-                </button>
-                <div className={`absolute left-0 top-[85%] w-52 overflow-hidden rounded-[24px] border border-white/10 bg-[#0b1730]/95 p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${activeMenu === menu.title ? 'visible opacity-100 translate-y-2' : 'invisible opacity-0 translate-y-0'}`}>
-                  <div className="flex flex-col gap-1">
-                    {menu.sub.map((s) => (
-                      <Link key={s.name} href={s.path} className="rounded-xl px-4 py-3 text-[11px] font-bold text-white/80 transition-all hover:bg-cyan-400/10 hover:text-cyan-300 uppercase tracking-tight">
-                        {s.name}
-                      </Link>
-                    ))}
+    <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
+      {/* 페이지 헤더 (spec §5.3) */}
+      <header className="mb-10 border-b border-edge pb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
+          MASL Fan Predictions
+        </p>
+        <h1 className="mt-3 font-display text-4xl font-semibold uppercase leading-[1.1] text-fg md:text-6xl">
+          Match Predict
+        </h1>
+        <p className="mt-4 max-w-xl text-[15px] leading-[1.65] text-fg-mid">
+          승리할 팀을 예측하고 팬들의 투표 현황을 확인하세요.
+        </p>
+      </header>
+
+      {loading ? (
+        /* 로딩 스켈레톤 (spec §5.14) — 최종 레이아웃과 같은 블록 */
+        <div className="space-y-6">
+          <div className="h-96 animate-pulse rounded-xl border border-edge bg-surface" />
+          <div className="h-96 animate-pulse rounded-xl border border-edge bg-surface" />
+        </div>
+      ) : matches.length === 0 ? (
+        /* 빈 상태 (spec §5.14) */
+        <div className="rounded-xl border border-dashed border-edge bg-surface/50 px-6 py-14 text-center">
+          <p className="text-[15px] font-semibold text-fg-mid">진행 중인 예측 경기가 없습니다.</p>
+          <p className="mt-1 text-sm text-fg-dim">새 경기가 등록되면 이곳에서 투표할 수 있어요.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {matches.map((match, index) => {
+            // 💡 [추가됨] 투표 퍼센트 계산
+            const counts = voteCounts[match.id] || {};
+            const votesA = counts[match.team_a] || 0;
+            const votesB = counts[match.team_b] || 0;
+            const totalVotes = votesA + votesB;
+            const percentA = totalVotes === 0 ? 50 : Math.round((votesA / totalVotes) * 100);
+            const percentB = totalVotes === 0 ? 50 : 100 - percentA;
+
+            const votedTeam = userVotes[match.id];
+            const hasVoted = !!votedTeam;
+
+            return (
+              <article key={match.id} className="rounded-xl border border-edge bg-surface p-5 md:p-6">
+                {/* 메타 행: 종목 배지 + 일시 캡션 */}
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-2.5 py-1 text-xs font-semibold text-fg-mid">
+                    {match.sport_type || 'MASL'}
+                  </span>
+                  <time className="text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">
+                    {new Date(match.match_date).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} KST
+                  </time>
+                </div>
+
+                {/* 두 팀 미디어 스트립 (spec §5.16 프레임 + 스크림) — 글로우/줌 없음 */}
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-edge bg-surface md:aspect-[21/9]">
+                  <img
+                    src={`/images/match_bg_${(index % 2 + 1)}.png`}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover opacity-60"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 via-canvas/25 to-transparent" />
+                  <div className="relative z-10 grid h-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 md:px-12">
+                    <div className="flex h-full min-w-0 items-center justify-center py-6 md:py-8">
+                      <TeamLogo name={match.team_a} className="h-full w-full" />
+                    </div>
+                    <span className="font-display text-lg font-medium uppercase text-fg-dim md:text-xl">VS</span>
+                    <div className="flex h-full min-w-0 items-center justify-center py-6 md:py-8">
+                      <TeamLogo name={match.team_b} className="h-full w-full" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          <button onClick={handleGoogleLogin} className="flex-shrink-0 ml-2 rounded-full border border-cyan-400/50 bg-cyan-400/10 px-5 py-2.5 text-[10px] md:text-[11px] font-black tracking-widest text-cyan-300 transition-all hover:bg-cyan-400 hover:text-black uppercase shadow-[0_0_15px_rgba(34,211,238,0.2)] active:scale-95">
-            {currentUser ? 'Logged In' : 'Sign In'}
-          </button>
-        </div>
-      </nav>
 
-      {/* 🔥 BACKGROUND LAYER */}
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,rgba(0,255,255,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(57,255,20,0.10),transparent_22%),radial-gradient(circle_at_bottom,rgba(0,140,255,0.12),transparent_30%),linear-gradient(180deg,#040b16_0%,#06101f_45%,#081426_100%)]" />
-
-      <div className="mx-auto max-w-6xl relative z-10">
-        <div className="mb-24 animate-in fade-in slide-in-from-top-6 duration-1000">
-          <div className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-2.5 text-[12px] font-black uppercase tracking-[0.4em] text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.3)] mb-8">
-            MASL FAN PREDICTIONS
-          </div>
-          <h1 className="text-6xl md:text-[8rem] font-black italic tracking-tighter uppercase leading-[0.85]">
-            Match <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-lime-300 bg-clip-text text-transparent">Predict</span>
-          </h1>
-          <p className="mt-8 text-white/40 font-black tracking-widest uppercase text-sm">승리할 팀을 예측하고 팬들의 투표 현황을 확인하세요.</p>
-        </div>
-
-        <div className="space-y-32">
-          {matches.length === 0 ? (
-            <div className="py-20 text-center border border-dashed border-white/10 rounded-[3rem]">
-              <p className="text-white/30 font-black tracking-[0.3em] uppercase italic text-xl">진행 중인 예측 경기가 없습니다.</p>
-            </div>
-          ) : (
-            matches.map((match, index) => {
-              // 💡 [추가됨] 투표 퍼센트 계산
-              const counts = voteCounts[match.id] || {};
-              const votesA = counts[match.team_a] || 0;
-              const votesB = counts[match.team_b] || 0;
-              const totalVotes = votesA + votesB;
-              const percentA = totalVotes === 0 ? 50 : Math.round((votesA / totalVotes) * 100);
-              const percentB = totalVotes === 0 ? 50 : 100 - percentA;
-
-              return (
-                <div key={match.id} className="relative z-0 group">
-                  <div className="relative overflow-hidden rounded-[60px] border border-white/5 bg-black/40 shadow-[0_40px_100px_rgba(0,0,0,0.6)] aspect-[21/9]">
-                    <img src={`/images/match_bg_${(index % 2 + 1) }.png`} alt="Match Background" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-[2s] group-hover:scale-110" />
-                    
-                    <div className="relative z-10 h-full w-full">
-                      <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square flex items-center justify-center">
-                        <img src={`/teams/${match.team_a}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_90px_rgba(34,211,238,0.5)] transition-all" alt={match.team_a} />
-                      </div>
-
-                      <div className="absolute left-[76.5%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-[65%] aspect-square flex items-center justify-center">
-                        <img src={`/teams/${match.team_b}.png`} className="w-full h-full object-contain filter brightness-110 drop-shadow-[0_0_50px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_100px_rgba(57,255,20,0.5)] transition-all" alt={match.team_b} />
-                      </div>
-
-                      <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                        <div className="rounded-full border border-cyan-400/15 bg-[#06101f]/95 px-12 py-3.5 backdrop-blur-3xl shadow-[0_15px_50px_rgba(0,0,0,0.9)]">
-                          <p className="text-xs md:text-sm font-black tracking-[0.4em] text-cyan-300 uppercase italic">
-                            {new Date(match.match_date).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false })} KST
-                          </p>
-                        </div>
-                      </div>
+                {/* 퍼센트 바 (spec §5.12) — 홈 accent / 어웨이 amber */}
+                <div className="mt-5">
+                  <div className="mb-2 flex items-end justify-between">
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="font-display text-2xl font-medium leading-none tabular-nums text-fg md:text-3xl">{percentA}%</span>
+                      <span className="text-xs font-medium text-fg-dim">{votesA}표</span>
+                    </div>
+                    <span className="pb-1 text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">Fan Forecast</span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="font-display text-2xl font-medium leading-none tabular-nums text-fg md:text-3xl">{percentB}%</span>
+                      <span className="text-xs font-medium text-fg-dim">{votesB}표</span>
                     </div>
                   </div>
-
-                  {/* 💡 [추가됨] 퍼센트 바 디자인 */}
-                  <div className="mt-8 px-10 w-full relative z-10">
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="flex flex-col items-start">
-                        <span className="text-cyan-400 text-3xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">{percentA}%</span>
-                        <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">{votesA} Votes</span>
-                      </div>
-                      
-                      <span className="text-white/30 text-[10px] font-black tracking-[0.4em] uppercase pb-2">Fan Forecast</span>
-                      
-                      <div className="flex flex-col items-end">
-                        <span className="text-lime-400 text-3xl font-black italic tracking-tighter drop-shadow-[0_0_10px_rgba(163,230,53,0.5)]">{percentB}%</span>
-                        <span className="text-white/40 text-[10px] font-black tracking-widest uppercase">{votesB} Votes</span>
-                      </div>
-                    </div>
-                    
-                    <div className="h-4 w-full bg-[#0b1730] rounded-full overflow-hidden flex shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-white/5 relative">
-                      <div 
-                        className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 transition-all duration-[1.5s] ease-out shadow-[0_0_15px_rgba(34,211,238,0.8)]" 
-                        style={{ width: `${percentA}%` }} 
-                      />
-                      <div 
-                        className="h-full bg-gradient-to-l from-lime-500 to-lime-300 transition-all duration-[1.5s] ease-out shadow-[0_0_15px_rgba(163,230,53,0.8)]" 
-                        style={{ width: `${percentB}%` }} 
-                      />
-                    </div>
-                  </div>
-
-                  {/* 기존 버튼 영역 */}
-                  <div className="mt-8 grid grid-cols-2 gap-6 px-10">
-                    <button 
-                      onClick={() => handleVote(match.id, match.team_a)}
-                      disabled={!!userVotes[match.id]}
-                      className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
-                        userVotes[match.id] === match.team_a 
-                          ? 'border-cyan-400 bg-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.4)]' 
-                          : userVotes[match.id] 
-                            ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
-                            : 'border-white/10 bg-[#0b1730] hover:border-cyan-400/50 hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_a ? 'text-cyan-300' : 'text-white/40'}`}>Predict Win</span>
-                        <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_a ? 'text-white' : 'text-white/80 group-hover/btn:text-cyan-300'}`}>
-                          {match.team_a}
-                        </span>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => handleVote(match.id, match.team_b)}
-                      disabled={!!userVotes[match.id]}
-                      className={`relative overflow-hidden rounded-[2rem] py-8 border-2 transition-all duration-300 group/btn ${
-                        userVotes[match.id] === match.team_b 
-                          ? 'border-lime-400 bg-lime-400/20 shadow-[0_0_30px_rgba(163,230,53,0.4)]' 
-                          : userVotes[match.id] 
-                            ? 'border-white/5 bg-white/5 opacity-50 cursor-not-allowed' 
-                            : 'border-white/10 bg-[#0b1730] hover:border-lime-400/50 hover:bg-white/5'
-                      }`}
-                    >
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${userVotes[match.id] === match.team_b ? 'text-lime-300' : 'text-white/40'}`}>Predict Win</span>
-                        <span className={`text-2xl font-black italic uppercase tracking-tighter ${userVotes[match.id] === match.team_b ? 'text-white' : 'text-white/80 group-hover/btn:text-lime-300'}`}>
-                          {match.team_b}
-                        </span>
-                      </div>
-                    </button>
+                  <div className="flex h-2 w-full overflow-hidden rounded-full bg-raised">
+                    <div
+                      className="h-full bg-accent transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                      style={{ width: `${percentA}%` }}
+                    />
+                    <div
+                      className="h-full bg-away transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                      style={{ width: `${percentB}%` }}
+                    />
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
 
-        <div className="mt-40 text-center opacity-10 font-black text-6xl italic tracking-tighter select-none uppercase">
-          MASL <span className="text-cyan-400">&</span> SYNC
+                {/* 투표 버튼 (spec §5.8 secondary) — 투표한 팀은 accent 보더 + 배지 */}
+                <div className="mt-5 grid grid-cols-1 gap-3 border-t border-edge pt-5 sm:grid-cols-2">
+                  <button
+                    onClick={() => handleVote(match.id, match.team_a)}
+                    disabled={hasVoted}
+                    className={`inline-flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:pointer-events-none ${
+                      votedTeam === match.team_a
+                        ? 'border border-accent/30 bg-accent/10 text-fg'
+                        : hasVoted
+                          ? 'border border-edge bg-transparent text-fg-dim opacity-50'
+                          : 'border border-edge-strong bg-transparent text-fg hover:bg-raised active:opacity-90'
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                    <span className="min-w-0 truncate">{match.team_a}</span>
+                    {votedTeam === match.team_a && (
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-bright">
+                        내 예측
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => handleVote(match.id, match.team_b)}
+                    disabled={hasVoted}
+                    className={`inline-flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors disabled:pointer-events-none ${
+                      votedTeam === match.team_b
+                        ? 'border border-accent/30 bg-accent/10 text-fg'
+                        : hasVoted
+                          ? 'border border-edge bg-transparent text-fg-dim opacity-50'
+                          : 'border border-edge-strong bg-transparent text-fg hover:bg-raised active:opacity-90'
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-away" />
+                    <span className="min-w-0 truncate">{match.team_b}</span>
+                    {votedTeam === match.team_b && (
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent-bright">
+                        내 예측
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

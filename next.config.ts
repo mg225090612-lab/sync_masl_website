@@ -15,6 +15,22 @@ const nextConfig: NextConfig = {
     // 같은 사진을 다른 유저가 봐도 Supabase에 다시 요청하지 않습니다.
     minimumCacheTTL: 86400,
   },
+
+  // 💡 옛 주소 호환: /masl/26s 시절 링크·북마크가 깨지지 않게 새 구조로 넘겨줍니다.
+  async redirects() {
+    return [
+      {
+        source: '/masl/26s/team/:path*',
+        destination: '/masl/team/:path*',
+        permanent: false,
+      },
+      {
+        source: '/masl/26s',
+        destination: '/masl/26%20spring',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
