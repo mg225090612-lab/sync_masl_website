@@ -57,6 +57,26 @@ async function fileToPngBlob(file: File, maxSize = 1000): Promise<Blob> {
   }
 }
 
+/* ── 아직 경기가 없는 "예정 팀" — 어떤 시즌·종목에 나가는지와 함께 localStorage에 기억해뒀다가
+     그 시즌 첫 경기가 저장되어 DB에 확정되면 자동으로 목록에서 정리됩니다. ── */
+type ExtraTeam = { name: string; category: string; season: string };
+
+function readExtraTeams(): ExtraTeam[] {
+  try {
+    return JSON.parse(localStorage.getItem('admin_extra_teams') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function writeExtraTeams(list: ExtraTeam[]) {
+  try {
+    localStorage.setItem('admin_extra_teams', JSON.stringify(list));
+  } catch {
+    // 무시
+  }
+}
+
 export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -114,7 +134,7 @@ export default function AdminPage() {
         <>
           {/* 탭 */}
           <div className="mb-8 flex gap-2">
-            {([['matches', '경기 관리'], ['players', '선수 관리'], ['teams', '팀 로고']] as const).map(([key, label]) => (
+            {([['matches', '경기 관리'], ['players', '선수 관리'], ['teams', '팀 관리']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -145,6 +165,10 @@ function MatchesAdmin() {
   const [filterSeason, setFilterSeason] = useState('');
   const [filterSport, setFilterSport] = useState('');
   const [showNew, setShowNew] = useState(false);
+
+  // 팀 관리 탭에서 미리 등록해둔 "예정 팀" (시즌별 자동완성에 사용)
+  const [extraTeams, setExtraTeams] = useState<ExtraTeam[]>([]);
+  useEffect(() => { setExtraTeams(readExtraTeams()); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -246,6 +270,8 @@ function MatchesAdmin() {
           key={newFormSeason || 'default'}
           teams={teams}
           seasons={seasons}
+          matches={list}
+          extraTeams={extraTeams}
           defaultSeason={newFormSeason}
           hasScoreCols={hasScoreCols}
           onSaved={async () => { setShowNew(false); setNewFormSeason(null); await afterWrite(); }}
@@ -272,10 +298,12 @@ function MatchesAdmin() {
 }
 
 function NewMatchForm({
-  teams, seasons, defaultSeason, hasScoreCols, onSaved,
+  teams, seasons, matches, extraTeams, defaultSeason, hasScoreCols, onSaved,
 }: {
   teams: { team_name: string; category: string }[];
   seasons: string[];
+  matches: any[];
+  extraTeams: ExtraTeam[];
   defaultSeason?: string | null;
   hasScoreCols: boolean;
   onSaved: () => Promise<void>;
@@ -292,7 +320,26 @@ function NewMatchForm({
   });
   const [saving, setSaving] = useState(false);
 
-  const sportTeams = teams.filter(t => t.category === f.sport_type).map(t => t.team_name);
+  // 💡 팀 자동완성: "선택한 시즌 + 종목"의 참가팀만 보여줍니다.
+  //    = 그 시즌 경기에 이미 나온 팀 + [팀 로고] 탭에서 미리 등록해둔 팀.
+  //    아직 아무 팀도 없으면(시즌 첫 경기) 그 종목의 전체 팀을 대신 제안합니다.
+  const seasonTeams = Array.from(
+    new Set(
+      matches
+        .filter(m => m.season === f.season && m.sport_type === f.sport_type)
+        .flatMap(m => [m.team_a, m.team_b])
+        .filter(Boolean)
+    )
+  ) as string[];
+  extraTeams
+    .filter(t => t.season === f.season && t.category === f.sport_type)
+    .forEach(t => {
+      if (!seasonTeams.includes(t.name)) seasonTeams.push(t.name);
+    });
+  const sportTeams =
+    seasonTeams.length > 0
+      ? seasonTeams
+      : teams.filter(t => t.category === f.sport_type).map(t => t.team_name);
 
   const save = async () => {
     if (!f.team_a || !f.team_b) return alert('두 팀 이름을 입력해주세요.');
@@ -363,8 +410,12 @@ function NewMatchForm({
           {saving ? '저장 중...' : '경기 등록'}
         </button>
       </div>
+      <p className="mt-3 text-xs text-fg-dim">
+        💡 팀 자동완성은 선택한 시즌·종목의 참가팀 기준입니다. 시즌에 처음 나가는 팀은
+        [팀 관리] 탭의 [+ 새 팀]으로 먼저 등록하면 여기 나타납니다.
+      </p>
       {!hasScoreCols && (
-        <p className="mt-3 text-xs text-fg-dim">
+        <p className="mt-1 text-xs text-fg-dim">
           💡 스코어 입력칸은 DB에 score_a / score_b 컬럼을 추가하면 자동으로 나타납니다.
         </p>
       )}
@@ -491,17 +542,25 @@ function PlayersAdmin() {
 
   useEffect(() => { load(); }, [load]);
 
-  const teamsOfSport = useMemo(
-    () =>
-      Array.from(
-        new Set(list.filter(p => !filterSport || p.category === filterSport).map(p => p.team_name).filter(Boolean))
-      ) as string[],
-    [list, filterSport]
-  );
-  const allTeams = useMemo(
-    () => Array.from(new Set(list.map(p => p.team_name).filter(Boolean))) as string[],
-    [list]
-  );
+  // 팀 관리 탭에서 미리 등록해둔 "예정 팀"도 자동완성에 포함합니다.
+  const [extraTeams, setExtraTeams] = useState<ExtraTeam[]>([]);
+  useEffect(() => { setExtraTeams(readExtraTeams()); }, []);
+
+  const teamsOfSport = useMemo(() => {
+    const names = Array.from(
+      new Set(list.filter(p => !filterSport || p.category === filterSport).map(p => p.team_name).filter(Boolean))
+    ) as string[];
+    extraTeams
+      .filter(t => !filterSport || t.category === filterSport)
+      .forEach(t => { if (!names.includes(t.name)) names.push(t.name); });
+    return names;
+  }, [list, filterSport, extraTeams]);
+
+  const allTeams = useMemo(() => {
+    const names = Array.from(new Set(list.map(p => p.team_name).filter(Boolean))) as string[];
+    extraTeams.forEach(t => { if (!names.includes(t.name)) names.push(t.name); });
+    return names;
+  }, [list, extraTeams]);
 
   const filtered = list.filter(
     p => (!filterSport || p.category === filterSport) && (!filterTeam || p.team_name === filterTeam)
@@ -622,19 +681,27 @@ function NewPlayerForm({
   );
 }
 
-/* ═══════════════════════ 팀 로고 관리 ═══════════════════════ */
+/* ═══════════════════════ 팀 관리 (로고 + 시즌별 참가팀) ═══════════════════════ */
 
 function TeamsAdmin() {
-  const [rows, setRows] = useState<{ name: string; categories: string[] }[]>([]);
+  const [dbRows, setDbRows] = useState<{ name: string; categories: string[] }[]>([]);
+  const [dbMatches, setDbMatches] = useState<any[]>([]);
+  const [extraTeams, setExtraTeams] = useState<ExtraTeam[]>([]);
+  const [seasonOptions, setSeasonOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterSport, setFilterSport] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [nf, setNf] = useState({ name: '', category: SPORTS[0], season: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
     // 선수 명단과 경기 기록 양쪽에서 팀 이름을 모아 중복 없이 목록을 만듭니다.
     const [{ data: players }, { data: matches }] = await Promise.all([
       supabase.from('players').select('team_name, category'),
-      supabase.from('matches').select('team_a, team_b, sport_type'),
+      supabase
+        .from('matches')
+        .select('team_a, team_b, sport_type, season, match_date')
+        .order('match_date', { ascending: false }),
     ]);
     const map = new Map<string, Set<string>>();
     const add = (name?: string | null, cat?: string | null) => {
@@ -647,15 +714,83 @@ function TeamsAdmin() {
       add(m.team_a, m.sport_type);
       add(m.team_b, m.sport_type);
     });
-    setRows(
+    setDbRows(
       Array.from(map.entries())
         .map(([name, cats]) => ({ name, categories: Array.from(cats) }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     );
+    setDbMatches(matches || []);
+
+    // 새 팀 등록 폼의 시즌 선택지: DB 시즌(최신순) + [+ 새 시즌]으로 만들어둔 임시 시즌
+    const seen: string[] = [];
+    (matches || []).forEach(m => {
+      if (m.season && !seen.includes(m.season)) seen.push(m.season);
+    });
+    try {
+      (JSON.parse(localStorage.getItem('admin_extra_seasons') || '[]') as string[]).forEach(s => {
+        if (!seen.includes(s)) seen.push(s);
+      });
+    } catch {}
+    setSeasonOptions(seen);
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setExtraTeams(readExtraTeams()); }, []);
+  useEffect(() => {
+    if (!nf.season && seasonOptions.length > 0) {
+      setNf(n => ({ ...n, season: seasonOptions[0] }));
+    }
+  }, [seasonOptions, nf.season]);
+
+  // 그 시즌 경기에 등장한 팀은 확정된 것 → 임시 목록에서 자동 정리
+  useEffect(() => {
+    setExtraTeams(prev => {
+      const pruned = prev.filter(
+        t => !dbMatches.some(m => m.season === t.season && (m.team_a === t.name || m.team_b === t.name))
+      );
+      if (pruned.length !== prev.length) {
+        writeExtraTeams(pruned);
+        return pruned;
+      }
+      return prev;
+    });
+  }, [dbMatches]);
+
+  const rows = useMemo(() => {
+    const merged: { name: string; categories: string[]; pendingSeason?: string }[] =
+      dbRows.map(r => ({ name: r.name, categories: [...r.categories] }));
+    extraTeams.forEach(t => {
+      const existing = merged.find(r => r.name === t.name);
+      if (existing) {
+        if (!existing.categories.includes(t.category)) existing.categories.push(t.category);
+      } else {
+        merged.push({ name: t.name, categories: [t.category], pendingSeason: t.season });
+      }
+    });
+    return merged.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  }, [dbRows, extraTeams]);
+
+  // 새 팀 등록 → 팀 목록·경기 폼 자동완성에 바로 나타나고, 첫 경기가 저장되면 확정됩니다.
+  const addTeam = () => {
+    const name = nf.name.trim();
+    if (!name) return alert('팀 이름을 입력해주세요.');
+    if (!nf.season) return alert('시즌을 선택해주세요.');
+    if (extraTeams.some(t => t.name === name && t.season === nf.season))
+      return alert('이미 등록해둔 팀입니다.');
+    const next = [...extraTeams, { name, category: nf.category, season: nf.season }];
+    setExtraTeams(next);
+    writeExtraTeams(next);
+    setNf(n => ({ ...n, name: '' }));
+    setShowNew(false);
+  };
+
+  const removePending = (name: string) => {
+    if (!confirm(`[${name}] 팀을 목록에서 제거할까요?`)) return;
+    const next = extraTeams.filter(t => t.name !== name);
+    setExtraTeams(next);
+    writeExtraTeams(next);
+  };
 
   const filtered = rows.filter(r => !filterSport || r.categories.includes(filterSport));
 
@@ -667,11 +802,43 @@ function TeamsAdmin() {
           {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <span className="text-sm font-medium tabular-nums text-fg-dim">{filtered.length}팀</span>
+        <div className="flex-1" />
+        <button onClick={() => setShowNew(v => !v)} className={btnPrimary}>
+          {showNew ? '닫기' : '+ 새 팀'}
+        </button>
       </div>
 
+      {showNew && (
+        <div className="rounded-xl border border-accent/30 bg-surface p-5">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">새 팀 등록</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">팀 이름</span>
+              <input value={nf.name} onChange={e => setNf({ ...nf, name: e.target.value })} className={inputCls} placeholder="예: 빵빵이의 축구교실" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">종목</span>
+              <select value={nf.category} onChange={e => setNf({ ...nf, category: e.target.value })} className={selectCls}>
+                {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">참가 시즌</span>
+              <select value={nf.season} onChange={e => setNf({ ...nf, season: e.target.value })} className={selectCls}>
+                {seasonOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <button onClick={addTeam} className={btnPrimary}>팀 추가</button>
+          </div>
+        </div>
+      )}
+
       <p className="max-w-2xl text-sm leading-[1.6] text-fg-dim">
-        썸네일이나 📷 버튼을 눌러 팀 대표 이미지를 올리면 홈 슬라이더 · 대진표 · 예측 페이지에 바로 적용됩니다.
-        업로드한 로고가 없는 팀은 소스에 들어있는 기본 이미지(있는 경우) → 이니셜 순으로 표시됩니다.
+        시즌에 처음 나가는 팀은 <b className="text-fg-mid">[+ 새 팀]</b>으로 먼저 등록하세요 — 등록하면 새 경기 폼의
+        팀 자동완성에 바로 나타나고, 첫 경기를 저장하면 확정됩니다. 썸네일이나 로고 업로드 버튼으로
+        팀 대표 이미지를 올리면 홈 슬라이더 · 대진표 · 예측 페이지에 바로 적용됩니다.
       </p>
 
       {loading ? (
@@ -681,18 +848,31 @@ function TeamsAdmin() {
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-edge bg-surface/50 px-6 py-14 text-center">
           <p className="text-[15px] font-semibold text-fg-mid">등록된 팀이 없습니다.</p>
-          <p className="mt-1 text-sm text-fg-dim">선수나 경기를 먼저 등록하면 팀이 여기 나타납니다.</p>
+          <p className="mt-1 text-sm text-fg-dim">[+ 새 팀]으로 팀을 먼저 등록해 보세요.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(t => <TeamLogoRow key={t.name} team={t} />)}
+          {filtered.map(t => (
+            <TeamLogoRow
+              key={t.name}
+              team={{ name: t.name, categories: t.categories }}
+              pendingSeason={t.pendingSeason}
+              onRemovePending={() => removePending(t.name)}
+            />
+          ))}
         </div>
       )}
     </section>
   );
 }
 
-function TeamLogoRow({ team }: { team: { name: string; categories: string[] } }) {
+function TeamLogoRow({
+  team, pendingSeason, onRemovePending,
+}: {
+  team: { name: string; categories: string[] };
+  pendingSeason?: string;
+  onRemovePending?: () => void;
+}) {
   const [uploading, setUploading] = useState(false);
   const [ver, setVer] = useState(0); // 업로드/삭제 직후 썸네일 강제 새로고침용
   const fileRef = useRef<HTMLInputElement>(null);
@@ -749,6 +929,11 @@ function TeamLogoRow({ team }: { team: { name: string; categories: string[] } })
         <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-fg">{team.name}</p>
 
         <div className="flex shrink-0 flex-wrap gap-1.5">
+          {pendingSeason && (
+            <span className="inline-flex items-center rounded-full border border-away/30 bg-away/10 px-2.5 py-0.5 text-xs font-semibold text-away">
+              {pendingSeason} · 경기 등록 전
+            </span>
+          )}
           {team.categories.map(c => (
             <span key={c} className="inline-flex items-center rounded-full border border-edge bg-raised px-2.5 py-0.5 text-xs font-semibold text-fg-mid">
               {c}
@@ -760,7 +945,11 @@ function TeamLogoRow({ team }: { team: { name: string; categories: string[] } })
           <button onClick={() => fileRef.current?.click()} disabled={uploading} className={btnPrimary}>
             {uploading ? '업로드 중...' : '📷 로고 업로드'}
           </button>
-          <button onClick={removeLogo} disabled={uploading} className={btnGhost}>삭제</button>
+          {pendingSeason ? (
+            <button onClick={onRemovePending} disabled={uploading} className={btnGhost}>제거</button>
+          ) : (
+            <button onClick={removeLogo} disabled={uploading} className={btnGhost}>삭제</button>
+          )}
         </div>
       </div>
     </article>
