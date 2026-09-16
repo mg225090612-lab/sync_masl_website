@@ -5,6 +5,7 @@ import { supabase, getSessionUser } from '@/lib/supabase';
 import { invalidateCache, clearPhotoMissing } from '@/lib/cache';
 import { isAdminUser } from '@/lib/admin';
 import { teamLogoPath } from '@/lib/teamLogo';
+import { fetchSeasons } from '@/lib/seasons';
 import TeamLogo from '@/app/components/TeamLogo';
 
 const SPORTS = ['남자축구', '여자축구', '남자농구', '여자배구'];
@@ -533,6 +534,19 @@ function PlayersAdmin() {
     supabase.from('teams').select('*').then(({ data }) => setRegTeams((data as RegTeam[]) || []));
   }, []);
 
+  // 시즌 선택지: 경기 시즌 + 팀 등록부 시즌 + 선수들이 이미 갖고 있는 시즌
+  const [filterSeason, setFilterSeason] = useState('');
+  const [seasonBase, setSeasonBase] = useState<string[]>([]);
+  useEffect(() => {
+    fetchSeasons().then(setSeasonBase).catch(() => {});
+  }, []);
+  const seasonOptions = useMemo(() => {
+    const opts = [...seasonBase];
+    regTeams.forEach(t => { if (t.season && !opts.includes(t.season)) opts.push(t.season); });
+    list.forEach(pl => { if (pl.season && !opts.includes(pl.season)) opts.push(pl.season); });
+    return opts;
+  }, [seasonBase, regTeams, list]);
+
   const teamsOfSport = useMemo(() => {
     const names = Array.from(
       new Set(list.filter(p => !filterSport || p.category === filterSport).map(p => p.team_name).filter(Boolean))
@@ -550,7 +564,10 @@ function PlayersAdmin() {
   }, [list, regTeams]);
 
   const filtered = list.filter(
-    p => (!filterSport || p.category === filterSport) && (!filterTeam || p.team_name === filterTeam)
+    p =>
+      (!filterSport || p.category === filterSport) &&
+      (!filterTeam || p.team_name === filterTeam) &&
+      (!filterSeason || p.season === filterSeason)
   );
 
   const afterWrite = async () => {
@@ -573,6 +590,10 @@ function PlayersAdmin() {
           <option value="">전체 팀</option>
           {teamsOfSport.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
+        <select value={filterSeason} onChange={e => setFilterSeason(e.target.value)} className={`${selectCls} w-36`}>
+          <option value="">전체 시즌</option>
+          {seasonOptions.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
         <span className="text-sm font-medium tabular-nums text-fg-dim">{filtered.length}명</span>
         <div className="flex-1" />
         <button onClick={() => setShowNew(v => !v)} className={btnPrimary}>
@@ -583,8 +604,10 @@ function PlayersAdmin() {
       {showNew && (
         <NewPlayerForm
           teams={allTeams}
+          seasons={seasonOptions}
           defaultSport={filterSport || SPORTS[0]}
           defaultTeam={filterTeam}
+          defaultSeason={filterSeason || seasonOptions[0] || ''}
           onSaved={async () => { await afterWrite(); }}
         />
       )}
@@ -600,7 +623,7 @@ function PlayersAdmin() {
       ) : (
         <div className="space-y-3">
           {filtered.map(p => (
-            <PlayerRow key={p.id} player={p} teams={allTeams} onChanged={afterWrite} />
+            <PlayerRow key={p.id} player={p} teams={allTeams} seasons={seasonOptions} onChanged={afterWrite} />
           ))}
         </div>
       )}
@@ -610,25 +633,31 @@ function PlayersAdmin() {
 }
 
 function NewPlayerForm({
-  teams, defaultSport, defaultTeam, onSaved,
+  teams, seasons, defaultSport, defaultTeam, defaultSeason, onSaved,
 }: {
   teams: string[];
+  seasons: string[];
   defaultSport: string;
   defaultTeam: string;
+  defaultSeason: string;
   onSaved: () => Promise<void>;
 }) {
-  const [f, setF] = useState({ name: '', player_number: '', team_name: defaultTeam, category: defaultSport });
+  const [f, setF] = useState({
+    name: '', player_number: '', team_name: defaultTeam, category: defaultSport, season: defaultSeason,
+  });
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (!f.name) return alert('선수 이름을 입력해주세요.');
     if (!f.team_name) return alert('팀 이름을 입력해주세요.');
     setSaving(true);
+    // 💡 같은 팀 이름이 시즌마다 다른 팀일 수 있으므로, 선수는 시즌 소속으로 저장합니다.
     const { error } = await supabase.from('players').insert({
       name: f.name,
       player_number: f.player_number === '' ? null : Number(f.player_number),
       team_name: f.team_name,
       category: f.category,
+      season: f.season || null,
     });
     setSaving(false);
     if (error) return alert('저장 실패: ' + error.message);
@@ -656,6 +685,12 @@ function NewPlayerForm({
           <span className="mb-1 block text-xs font-medium text-fg-dim">종목</span>
           <select value={f.category} onChange={e => setF({ ...f, category: e.target.value })} className={selectCls}>
             {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-fg-dim">시즌</span>
+          <select value={f.season} onChange={e => setF({ ...f, season: e.target.value })} className={selectCls}>
+            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
       </div>
@@ -866,20 +901,25 @@ function TeamLogoRow({
   const [ver, setVer] = useState(0); // 업로드/삭제 직후 썸네일 강제 새로고침용
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // 💡 로고 업로드: 아무 이미지나 고르면 자동 리사이즈 후 팀 이름 기준 고정 경로로 저장됩니다.
+  // 💡 같은 팀 이름이 시즌마다 다른 팀일 수 있어서, 로고를 "어느 시즌"에 올릴지 선택합니다.
+  // 공통(기본)에 올리면 시즌별 로고가 없는 모든 시즌에서 그 로고를 씁니다.
+  const [logoSeason, setLogoSeason] = useState<string>(regSeasons[0] || '');
+
+  // 💡 로고 업로드: 아무 이미지나 고르면 자동 리사이즈 후 고정 경로로 저장됩니다.
   const upload = async (file: File) => {
     setUploading(true);
     try {
       const blob = await fileToPngBlob(file, 800);
       const { error } = await supabase.storage
         .from('player-photos')
-        .upload(teamLogoPath(team.name), blob, {
+        .upload(teamLogoPath(team.name, logoSeason || undefined), blob, {
           upsert: true,
           contentType: blob.type || 'image/png',
           cacheControl: '3600',
         });
       if (error) return alert('로고 업로드 실패: ' + error.message);
-      clearPhotoMissing(`team:${team.name}`); // "로고 없음" 기록 해제 → 즉시 다시 로드
+      // "로고 없음" 기록 해제 → 즉시 다시 로드
+      clearPhotoMissing(logoSeason ? `team:${logoSeason}:${team.name}` : `team:${team.name}`);
       invalidateCache('');
       setVer(v => v + 1);
     } finally {
@@ -889,8 +929,11 @@ function TeamLogoRow({
   };
 
   const removeLogo = async () => {
-    if (!confirm(`[${team.name}] 업로드된 로고를 삭제할까요?\n소스에 기본 이미지가 있으면 그 이미지로 돌아갑니다.`)) return;
-    const { error } = await supabase.storage.from('player-photos').remove([teamLogoPath(team.name)]);
+    const target = logoSeason ? `${logoSeason} 시즌` : '공통(기본)';
+    if (!confirm(`[${team.name}] ${target} 로고를 삭제할까요?`)) return;
+    const { error } = await supabase.storage
+      .from('player-photos')
+      .remove([teamLogoPath(team.name, logoSeason || undefined)]);
     if (error) return alert('삭제 실패: ' + error.message);
     setVer(v => v + 1);
   };
@@ -904,7 +947,7 @@ function TeamLogoRow({
           title="로고 업로드/교체"
           className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-edge bg-raised p-1.5 transition-colors hover:border-accent/50"
         >
-          <TeamLogo name={team.name} version={ver} className="h-full w-full" />
+          <TeamLogo name={team.name} season={logoSeason || undefined} version={ver} className="h-full w-full" />
           {uploading && <span className="absolute inset-0 animate-pulse bg-canvas/70" />}
         </button>
         <input
@@ -932,6 +975,17 @@ function TeamLogoRow({
         </div>
 
         <div className="flex items-center gap-2">
+          {regSeasons.length > 0 && (
+            <select
+              value={logoSeason}
+              onChange={e => setLogoSeason(e.target.value)}
+              className={`${selectCls} w-32`}
+              title="로고를 올릴 시즌"
+            >
+              {regSeasons.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="">공통(기본)</option>
+            </select>
+          )}
           <button onClick={() => fileRef.current?.click()} disabled={uploading} className={btnPrimary}>
             {uploading ? '업로드 중...' : '📷 로고 업로드'}
           </button>
@@ -945,11 +999,19 @@ function TeamLogoRow({
   );
 }
 
-function PlayerRow({ player, teams, onChanged }: { player: any; teams: string[]; onChanged: () => Promise<void> }) {
+function PlayerRow({
+  player, teams, seasons, onChanged,
+}: {
+  player: any;
+  teams: string[];
+  seasons: string[];
+  onChanged: () => Promise<void>;
+}) {
   const [f, setF] = useState({
     name: player.name || '',
     player_number: player.player_number ?? '',
     team_name: player.team_name || '',
+    season: player.season || '',
   });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -968,6 +1030,7 @@ function PlayerRow({ player, teams, onChanged }: { player: any; teams: string[];
         name: f.name,
         player_number: f.player_number === '' ? null : Number(f.player_number),
         team_name: f.team_name,
+        season: f.season || null,
       })
       .eq('id', player.id);
     setBusy(false);
@@ -1064,6 +1127,15 @@ function PlayerRow({ player, teams, onChanged }: { player: any; teams: string[];
           className={`${inputCls} min-w-40 flex-1`}
           placeholder="팀"
         />
+        <select
+          value={f.season}
+          onChange={e => setF({ ...f, season: e.target.value })}
+          className={`${selectCls} w-32`}
+          title="소속 시즌"
+        >
+          <option value="">시즌 없음</option>
+          {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
 
         <div className="flex items-center gap-2">
           <button onClick={() => fileRef.current?.click()} disabled={uploading} className={btnGhost}>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { cachedQuery, invalidateCache } from '@/lib/cache';
+import { fetchPlayersByTeams } from '@/lib/players';
 
 // 페이지 헤더 (spec §5.3) — 로딩/완료 상태에서 공유
 function PageHeader() {
@@ -86,18 +87,7 @@ export default function GvrRatePage() {
 
     try {
       [playerData, allRatings] = await Promise.all([
-        cachedQuery(
-          `players:teams:${activeMatch.team_a}|${activeMatch.team_b}`,
-          10 * 60 * 1000,
-          async () => {
-            const { data, error } = await supabase
-              .from('players')
-              .select('*')
-              .in('team_name', [activeMatch.team_a, activeMatch.team_b]);
-            if (error) throw error;
-            return data || [];
-          }
-        ),
+        fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season),
         cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
           const { data, error } = await supabase
             .from('ratings')

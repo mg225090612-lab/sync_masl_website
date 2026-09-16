@@ -210,11 +210,11 @@ export default function MaslSeasonPage({ params }: PageProps) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {teams.map(name => (
               <Link
-                href={`/masl/team/${encodeURIComponent(name)}`}
+                href={`/masl/team/${encodeURIComponent(name)}?season=${encodeURIComponent(season)}`}
                 key={name}
                 className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-edge-strong hover:bg-raised"
               >
-                <TeamLogo name={name} className="h-12 w-12 shrink-0" />
+                <TeamLogo name={name} season={season} className="h-12 w-12 shrink-0" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-fg">{name}</p>
                   <p className="mt-0.5 text-xs text-fg-dim">선수단 보기 →</p>
@@ -270,14 +270,14 @@ function SemiCard({ match, label }: { match: any; label: string }) {
         )}
       </div>
       <div className="space-y-1.5 p-3">
-        <SemiRow name={match.team_a} score={match.score_a} win={winA} />
-        <SemiRow name={match.team_b} score={match.score_b} win={winB} />
+        <SemiRow name={match.team_a} season={match.season} score={match.score_a} win={winA} />
+        <SemiRow name={match.team_b} season={match.season} score={match.score_b} win={winB} />
       </div>
     </article>
   );
 }
 
-function SemiRow({ name, score, win }: { name: string; score?: number; win: boolean }) {
+function SemiRow({ name, season, score, win }: { name: string; season?: string; score?: number; win: boolean }) {
   return (
     <div className={`flex items-center gap-3 rounded-lg px-2.5 py-2 ${win ? 'bg-accent/10' : ''}`}>
       {/* 로고 웰 */}
@@ -286,7 +286,7 @@ function SemiRow({ name, score, win }: { name: string; score?: number; win: bool
           win ? '' : 'opacity-60'
         }`}
       >
-        <TeamLogo name={name} className="h-full w-full" />
+        <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
       <span
         className={`min-w-0 flex-1 truncate text-sm font-semibold leading-[1.4] ${
@@ -357,7 +357,7 @@ function FinalCard({ match }: { match: any }) {
         )}
       </div>
       <div className="relative mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-        <FinalSide name={match.team_a} win={winA} />
+        <FinalSide name={match.team_a} season={match.season} win={winA} />
         {hasScores ? (
           <p className="px-1 font-display text-4xl font-medium leading-none tabular-nums md:text-5xl">
             <span className={winA ? 'text-fg' : 'text-fg-dim'}>{match.score_a}</span>
@@ -367,13 +367,13 @@ function FinalCard({ match }: { match: any }) {
         ) : (
           <p className="px-2 font-display text-2xl font-medium uppercase text-fg-dim">VS</p>
         )}
-        <FinalSide name={match.team_b} win={winB} />
+        <FinalSide name={match.team_b} season={match.season} win={winB} />
       </div>
     </article>
   );
 }
 
-function FinalSide({ name, win }: { name: string; win: boolean }) {
+function FinalSide({ name, season, win }: { name: string; season?: string; win: boolean }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center">
       {/* 로고 웰 — 승자는 액센트 프레임 */}
@@ -382,7 +382,7 @@ function FinalSide({ name, win }: { name: string; win: boolean }) {
           win ? 'border-accent/30 bg-accent/5' : 'border-edge bg-canvas/40 opacity-60'
         }`}
       >
-        <TeamLogo name={name} className="h-full w-full" />
+        <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
       <p
         className={`w-full truncate text-sm font-semibold leading-[1.4] ${

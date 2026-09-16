@@ -173,11 +173,11 @@ export default function PredictionsPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 via-canvas/25 to-transparent" />
                   <div className="relative z-10 grid h-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 md:px-12">
                     <div className="flex h-full min-w-0 items-center justify-center py-6 md:py-8">
-                      <TeamLogo name={match.team_a} className="h-full w-full" />
+                      <TeamLogo name={match.team_a} season={match.season} className="h-full w-full" />
                     </div>
                     <span className="font-display text-lg font-medium uppercase text-fg-dim md:text-xl">VS</span>
                     <div className="flex h-full min-w-0 items-center justify-center py-6 md:py-8">
-                      <TeamLogo name={match.team_b} className="h-full w-full" />
+                      <TeamLogo name={match.team_b} season={match.season} className="h-full w-full" />
                     </div>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { cachedQuery } from '@/lib/cache';
+import { fetchPlayersByTeams } from '@/lib/players';
 
 // spec §5.10 — select recipe (wrapper + chevron)
 const selectClass =
@@ -114,17 +115,7 @@ export default function GvrViewPage() {
 
     // 💡 Rate 페이지와 같은 캐시 키를 사용해서, 두 페이지를 오가도 요청이 중복되지 않습니다.
     const [playerData, allRatings] = await Promise.all([
-      cachedQuery(
-        `players:teams:${activeMatch.team_a}|${activeMatch.team_b}`,
-        10 * 60 * 1000,
-        async () => {
-          const { data } = await supabase
-            .from('players')
-            .select('*')
-            .in('team_name', [activeMatch.team_a, activeMatch.team_b]);
-          return data || [];
-        }
-      ),
+      fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season),
       cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
         const { data } = await supabase
           .from('ratings')
