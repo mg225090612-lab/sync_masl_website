@@ -49,8 +49,12 @@ export default function MaslSeasonPage({ params }: PageProps) {
         `masl-hub:${season}:${activeTab}`,
         5 * 60 * 1000,
         async () => {
-          const [{ data: teamData }, { data: matchData }] = await Promise.all([
-            supabase.from('players').select('team_name').eq('category', activeTab),
+          const [teamRes, { data: matchData }] = await Promise.all([
+            supabase
+              .from('players')
+              .select('team_name')
+              .eq('category', activeTab)
+              .eq('season', season), // 💡 이 시즌 소속 선수만 (다른 시즌 팀이 섞이지 않게)
             supabase
               .from('matches')
               .select('*')
@@ -60,7 +64,16 @@ export default function MaslSeasonPage({ params }: PageProps) {
               .order('match_order', { ascending: true }),
           ]);
 
-          // 참가 팀: 이 시즌 경기에 등장한 팀 우선, 경기가 없으면 선수 명단 기준
+          // players.season 컬럼이 없는 구버전 DB 폴백 (시즌 무시 조회)
+          let teamData = teamRes.data;
+          if (teamRes.error) {
+            ({ data: teamData } = await supabase
+              .from('players')
+              .select('team_name')
+              .eq('category', activeTab));
+          }
+
+          // 참가 팀: 이 시즌 경기에 등장한 팀 우선, 경기가 없으면 이 시즌 선수 명단 기준
           const matchTeams = Array.from(
             new Set((matchData || []).flatMap(m => [m.team_a, m.team_b]).filter(Boolean))
           ) as string[];

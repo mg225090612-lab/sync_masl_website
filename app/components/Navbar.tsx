@@ -146,10 +146,13 @@ export default function Navbar() {
             {isActive('/champions') && <ActiveBar />}
           </Link>
 
+          {/* 💡 Predictions는 수정 작업 중이라 임시로 메뉴에서 숨겼습니다.
+              다시 보이게 하려면 아래 주석을 해제하세요. (/predictions 주소로 직접 접속은 가능)
           <Link href="/predictions" className={isActive('/predictions') ? linkActive : linkIdle}>
             Predictions
             {isActive('/predictions') && <ActiveBar />}
           </Link>
+          */}
 
           {/* 💡 관리자 계정으로 로그인했을 때만 보입니다. */}
           {isAdminUser(user) && (
