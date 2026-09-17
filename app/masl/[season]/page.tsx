@@ -90,6 +90,43 @@ export default function MaslSeasonPage({ params }: PageProps) {
 
   const hasBracket = !!(semi1 || semi2 || finalMatch || quarters.length > 0);
 
+  // 💡 부전승 자동 감지: QF 슬롯이 비었는데 해당 4강 경기에 "다른 QF 승자가 아닌 팀"이 있으면
+  // 그 팀이 부전승으로 직행한 것으로 표시합니다. (별도 데이터 입력 불필요)
+  const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean): string | null => {
+    if (selfQf || !sf) return null;
+    const otherWinner = otherQf?.winnder_id || null;
+    const cands = [sf.team_a, sf.team_b].filter(Boolean).filter((t: string) => t !== otherWinner);
+    if (cands.length === 1) return cands[0];
+    if (cands.length === 2) return second ? cands[1] : cands[0];
+    return null;
+  };
+  const byes = [
+    byeFor(semi1, qf(1), qf(2), false),
+    byeFor(semi1, qf(2), qf(1), true),
+    byeFor(semi2, qf(3), qf(4), false),
+    byeFor(semi2, qf(4), qf(3), true),
+  ];
+
+  // QF 슬롯: 경기 있음 → 카드 / 부전승 → BYE 카드 / 둘 다 아니면 대진 미정
+  const qfSlotCard = (n: number, label: string) =>
+    qf(n) ? (
+      <CompactMatchCard match={qf(n)} label={label} />
+    ) : byes[n - 1] ? (
+      <ByeCard team={byes[n - 1] as string} season={season} label={label} />
+    ) : (
+      <CompactMatchCard match={null} label={label} />
+    );
+
+  // 💡 다음 라운드 미리 채우기: 확정된 승자(또는 부전승 팀)가 있으면 이름을, 없으면 "QF n 승자"
+  const sfSide = (n: number) => ({
+    team: qf(n)?.winnder_id || byes[n - 1] || null,
+    placeholder: `QF ${n} 승자`,
+  });
+  const finalSide = (n: number) => ({
+    team: (n === 1 ? semi1 : semi2)?.winnder_id || null,
+    placeholder: `SF ${n} 승자`,
+  });
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
       {/* ── 페이지 헤더 ─────────────────────────────────────────────── */}
@@ -158,26 +195,42 @@ export default function MaslSeasonPage({ params }: PageProps) {
               <div className="relative hidden md:grid md:grid-cols-[1fr_1.25rem_1fr_1.25rem_minmax(230px,300px)_1.25rem_1fr_1.25rem_1fr] md:items-stretch">
                 {/* 8강 왼쪽 (1·2경기) */}
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(1)} label="QF 1" /></div>
-                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(2)} label="QF 2" /></div>
+                  <div className="flex flex-1 items-center">{qfSlotCard(1, 'QF 1')}</div>
+                  <div className="flex flex-1 items-center">{qfSlotCard(2, 'QF 2')}</div>
                 </div>
                 <MergeConnector active={!!semi1} />
                 {/* 4강 왼쪽 */}
-                <div className="flex items-center"><CompactMatchCard match={semi1} label="SF 1" /></div>
+                <div className="flex items-center">
+                  {semi1 ? (
+                    <CompactMatchCard match={semi1} label="SF 1" />
+                  ) : (
+                    <PendingMatchCard label="SF 1" a={sfSide(1)} b={sfSide(2)} season={season} />
+                  )}
+                </div>
                 <Connector active={!!championName} />
                 {/* 결승 + 챔피언 (중앙) */}
                 <div className="flex flex-col justify-center gap-3">
                   {championName && <ChampionCrest name={championName} season={season} />}
-                  <FinalCard match={finalMatch} compact />
+                  {finalMatch ? (
+                    <FinalCard match={finalMatch} compact />
+                  ) : (
+                    <PendingMatchCard featured label="The Grand Final" a={finalSide(1)} b={finalSide(2)} season={season} />
+                  )}
                 </div>
                 <Connector active={!!championName} flip />
                 {/* 4강 오른쪽 */}
-                <div className="flex items-center"><CompactMatchCard match={semi2} label="SF 2" /></div>
+                <div className="flex items-center">
+                  {semi2 ? (
+                    <CompactMatchCard match={semi2} label="SF 2" />
+                  ) : (
+                    <PendingMatchCard label="SF 2" a={sfSide(3)} b={sfSide(4)} season={season} />
+                  )}
+                </div>
                 <MergeConnector active={!!semi2} flip />
                 {/* 8강 오른쪽 (3·4경기) */}
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(3)} label="QF 3" /></div>
-                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(4)} label="QF 4" /></div>
+                  <div className="flex flex-1 items-center">{qfSlotCard(3, 'QF 3')}</div>
+                  <div className="flex flex-1 items-center">{qfSlotCard(4, 'QF 4')}</div>
                 </div>
               </div>
             ) : (
@@ -187,7 +240,11 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <Connector active={!!championName} />
                 <div className="flex flex-col gap-4">
                   {championName && <ChampionCrest name={championName} season={season} />}
-                  <FinalCard match={finalMatch} />
+                  {finalMatch ? (
+                    <FinalCard match={finalMatch} />
+                  ) : (
+                    <PendingMatchCard featured label="The Grand Final" a={finalSide(1)} b={finalSide(2)} season={season} />
+                  )}
                 </div>
                 <Connector active={!!championName} flip />
                 <SemiCard match={semi2} label="Semi Final 2" />
@@ -197,7 +254,11 @@ export default function MaslSeasonPage({ params }: PageProps) {
             {/* ── 모바일: 챔피언 → 결승 → 4강 → 8강 순 세로 스택 ── */}
             <div className="relative space-y-4 md:hidden">
               {championName && <ChampionCrest name={championName} season={season} />}
-              <FinalCard match={finalMatch} />
+              {finalMatch ? (
+                <FinalCard match={finalMatch} />
+              ) : (
+                <PendingMatchCard featured label="The Grand Final" a={finalSide(1)} b={finalSide(2)} season={season} />
+              )}
               <div className="flex items-center gap-3 pt-2" aria-hidden="true">
                 <div className="h-px flex-1 bg-edge" />
                 <span className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-fg-dim">
@@ -206,8 +267,16 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <div className="h-px flex-1 bg-edge" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <SemiCard match={semi1} label="Semi Final 1" />
-                <SemiCard match={semi2} label="Semi Final 2" />
+                {semi1 || quarters.length === 0 ? (
+                  <SemiCard match={semi1} label="Semi Final 1" />
+                ) : (
+                  <PendingMatchCard label="Semi Final 1" a={sfSide(1)} b={sfSide(2)} season={season} />
+                )}
+                {semi2 || quarters.length === 0 ? (
+                  <SemiCard match={semi2} label="Semi Final 2" />
+                ) : (
+                  <PendingMatchCard label="Semi Final 2" a={sfSide(3)} b={sfSide(4)} season={season} />
+                )}
               </div>
               {quarters.length > 0 && (
                 <>
@@ -219,9 +288,15 @@ export default function MaslSeasonPage({ params }: PageProps) {
                     <div className="h-px flex-1 bg-edge" />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {[1, 2, 3, 4].map(n => (
-                      <SemiCard key={n} match={qf(n)} label={`Quarter Final ${n}`} />
-                    ))}
+                    {[1, 2, 3, 4].map(n =>
+                      qf(n) ? (
+                        <SemiCard key={n} match={qf(n)} label={`Quarter Final ${n}`} />
+                      ) : byes[n - 1] ? (
+                        <ByeCard key={n} team={byes[n - 1] as string} season={season} label={`Quarter Final ${n}`} />
+                      ) : (
+                        <SemiCard key={n} match={null} label={`Quarter Final ${n}`} />
+                      )
+                    )}
                   </div>
                 </>
               )}
@@ -518,6 +593,74 @@ function MergeConnector({ active, flip = false }: { active: boolean; flip?: bool
       <div className={`absolute bottom-1/4 border-t ${line} ${flip ? 'left-1/2 right-0' : 'left-0 right-1/2'}`} />
       <div className={`absolute bottom-1/4 top-1/4 left-1/2 border-l ${line}`} />
       <div className={`absolute top-1/2 border-t ${line} ${flip ? 'left-0 right-1/2' : 'left-1/2 right-0'}`} />
+    </div>
+  );
+}
+
+
+/* 부전승 카드 — QF 경기 없이 4강으로 직행한 팀 */
+function ByeCard({ team, season, label }: { team: string; season?: string; label: string }) {
+  return (
+    <article className="w-full overflow-hidden rounded-xl border border-edge bg-surface/70">
+      <div className="flex items-center justify-between gap-2 border-b border-edge bg-canvas/40 px-3 py-1.5">
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">{label}</p>
+        <span className="font-display text-xs font-semibold uppercase tracking-[0.08em] text-away">Bye</span>
+      </div>
+      <div className="flex items-center gap-2 p-2 px-3 py-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-edge bg-canvas/60 p-0.5">
+          <TeamLogo name={team} season={season} className="h-full w-full" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold leading-[1.4] text-fg">{team}</span>
+        <span className="inline-flex shrink-0 items-center rounded-full border border-away/30 bg-away/10 px-2 py-0.5 text-xs font-semibold text-away">
+          부전승
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/* 예정 경기 카드 — 아직 등록 전인 다음 라운드. 확정된 승자는 이름으로, 미정이면 "QF n 승자"로 표시 */
+function PendingMatchCard({
+  label, a, b, season, featured = false,
+}: {
+  label: string;
+  a: { team: string | null; placeholder: string };
+  b: { team: string | null; placeholder: string };
+  season?: string;
+  featured?: boolean;
+}) {
+  return (
+    <article className={`w-full overflow-hidden rounded-xl border bg-surface/70 ${featured ? 'border-accent/30' : 'border-edge'}`}>
+      <div className="border-b border-edge bg-canvas/40 px-3 py-1.5">
+        <p className={`font-display text-xs font-semibold uppercase tracking-[0.08em] ${featured ? 'text-accent-bright' : 'text-fg-dim'}`}>
+          {label}
+        </p>
+      </div>
+      <div className="space-y-1 p-2">
+        <PendingRow side={a} season={season} />
+        <PendingRow side={b} season={season} />
+      </div>
+    </article>
+  );
+}
+
+function PendingRow({ side, season }: { side: { team: string | null; placeholder: string }; season?: string }) {
+  if (side.team) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-edge bg-canvas/60 p-0.5">
+          <TeamLogo name={side.team} season={season} className="h-full w-full" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold leading-[1.4] text-fg">{side.team}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-dashed border-edge-strong text-xs font-bold text-fg-dim">
+        ?
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs font-medium leading-[1.4] text-fg-dim">{side.placeholder}</span>
     </div>
   );
 }
