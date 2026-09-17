@@ -365,6 +365,7 @@ function NewMatchForm({
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-fg-dim">라운드</span>
           <select value={f.round} onChange={e => setF({ ...f, round: Number(e.target.value) })} className={selectCls}>
+            <option value={8}>8강</option>
             <option value={4}>4강</option>
             <option value={2}>결승</option>
           </select>
@@ -457,7 +458,7 @@ function MatchRow({ match, hasScoreCols, onChanged }: { match: any; hasScoreCols
           {match.sport_type}
         </span>
         <span className="text-xs font-medium text-fg-dim">
-          {match.season} · {match.round === 2 ? '결승' : match.round === 4 ? '4강' : `라운드 ${match.round}`}
+          {match.season} · {match.round === 2 ? '결승' : match.round === 4 ? '4강' : match.round === 8 ? '8강' : `라운드 ${match.round}`}
         </span>
         <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-fg">
           {match.team_a} <span className="font-medium text-fg-dim">vs</span> {match.team_b}

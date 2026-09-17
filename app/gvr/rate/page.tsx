@@ -49,13 +49,16 @@ export default function GvrRatePage() {
     async function loadMatches() {
       // 💡 2분 동안 캐시: 페이지를 오갈 때마다 경기 목록을 다시 요청하지 않습니다.
       const data = await cachedQuery('gvr:recent-matches', 2 * 60 * 1000, async () => {
+        const now = new Date();
         const twoDaysAgo = new Date();
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
+        // 💡 "이미 시작했고(현재 이전) 최근 2일 이내인" 경기만 — 미래 경기는 평점 대상이 아닙니다.
         const { data, error } = await supabase
           .from('matches')
           .select('*')
           .gte('match_date', twoDaysAgo.toISOString())
+          .lte('match_date', now.toISOString())
           .order('match_date', { ascending: false });
 
         if (error) throw error;

@@ -80,13 +80,14 @@ export default function MaslSeasonPage({ params }: PageProps) {
     loadHubData();
   }, [activeTab, season]);
 
+  const quarters = matches.filter(m => m.round === 8);
   const semis = matches.filter(m => m.round === 4);
   const semi1 = semis.find(m => m.match_order === 1) || null;
   const semi2 = semis.find(m => m.match_order === 2) || null;
   const finalMatch = matches.find(m => m.round === 2) || null;
   const championName = finalMatch?.winnder_id || null;
 
-  const hasBracket = !!(semi1 || semi2 || finalMatch);
+  const hasBracket = !!(semi1 || semi2 || finalMatch || quarters.length > 0);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
@@ -142,6 +143,20 @@ export default function MaslSeasonPage({ params }: PageProps) {
             <p className="mt-1 text-sm text-fg-dim">대진이 확정되면 이곳에 표시됩니다.</p>
           </div>
         ) : (
+          <>
+          {/* 8강 — 있는 종목(남자농구 등)에만 표시됩니다 */}
+          {quarters.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-3 font-display text-xs font-semibold uppercase tracking-[0.14em] text-fg-dim">
+                Quarter Finals · 8강
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {quarters.map(q => (
+                  <SemiCard key={q.id} match={q} label={`8강 ${q.match_order}경기`} />
+                ))}
+              </div>
+            </div>
+          )}
           <div className="relative overflow-hidden rounded-2xl border border-edge bg-surface/60 px-4 py-10 sm:px-6 md:px-8 md:py-14">
             {/* 배경 모티프 — 경기장 센터 서클 + 하프라인 + 상단 조명 */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0">
@@ -180,6 +195,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+          </>
         )}
       </section>
 
