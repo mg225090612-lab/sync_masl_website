@@ -22,13 +22,17 @@ export default function TeamPage({ params }: PageProps) {
   const [players, setPlayers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 💡 같은 팀 이름이 시즌마다 다른 팀일 수 있어서, 시즌 기준으로 명단을 가져옵니다.
-  // 허브에서 넘어오면 URL의 ?season= 값을 쓰고, 없으면 최신 시즌 기준.
+  // 💡 같은 팀 이름이 시즌마다 다른 팀일 수 있고, 같은 시즌에 두 종목에 나갈 수도 있어서
+  // "시즌 + 종목" 기준으로 명단을 가져옵니다. 허브에서 넘어오면 URL의 ?season= ?sport= 값을 쓰고,
+  // 시즌이 없으면 최신 시즌 기준입니다.
   const [season, setSeason] = useState<string | null>(null);
+  const [sport, setSport] = useState<string | null>(null);
   const [seasonReady, setSeasonReady] = useState(false);
 
   useEffect(() => {
-    const sp = new URLSearchParams(window.location.search).get('season');
+    const qs = new URLSearchParams(window.location.search);
+    setSport(qs.get('sport'));
+    const sp = qs.get('season');
     if (sp) {
       setSeason(sp);
       setSeasonReady(true);
@@ -42,14 +46,14 @@ export default function TeamPage({ params }: PageProps) {
   useEffect(() => {
     if (!seasonReady) return;
     const run = async () => {
-      const data = await fetchPlayersByTeams([teamName], season);
+      const data = await fetchPlayersByTeams([teamName], season, sport);
       setPlayers(
         [...data].sort((a, b) => (a.player_number ?? 0) - (b.player_number ?? 0))
       );
       setLoading(false);
     };
     run();
-  }, [teamName, season, seasonReady]);
+  }, [teamName, season, sport, seasonReady]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
@@ -66,7 +70,7 @@ export default function TeamPage({ params }: PageProps) {
       {/* 페이지 헤더 (spec §5.3) — 한국어 팀명은 display-ko 타입 (spec §3.2) */}
       <header className="mb-10 border-b border-edge pb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
-          {season ? `MASL · ${season}` : 'MASL Team Roster'}
+          {['MASL', season, sport].filter(Boolean).join(' · ') || 'MASL Team Roster'}
         </p>
         <h1 className="mt-3 text-3xl font-extrabold leading-[1.25] tracking-[-0.01em] text-fg md:text-5xl">
           {teamName}

@@ -90,7 +90,7 @@ export default function GvrRatePage() {
 
     try {
       [playerData, allRatings] = await Promise.all([
-        fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season),
+        fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season, activeMatch.sport_type),
         cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
           const { data, error } = await supabase
             .from('ratings')

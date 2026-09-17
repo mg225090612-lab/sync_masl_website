@@ -115,7 +115,7 @@ export default function GvrViewPage() {
 
     // 💡 Rate 페이지와 같은 캐시 키를 사용해서, 두 페이지를 오가도 요청이 중복되지 않습니다.
     const [playerData, allRatings] = await Promise.all([
-      fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season),
+      fetchPlayersByTeams([activeMatch.team_a, activeMatch.team_b], activeMatch.season, activeMatch.sport_type),
       cachedQuery(`ratings:${activeMatch.id}`, 60 * 1000, async () => {
         const { data } = await supabase
           .from('ratings')

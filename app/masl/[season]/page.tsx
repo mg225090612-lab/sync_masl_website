@@ -226,7 +226,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {teams.map(name => (
               <Link
-                href={`/masl/team/${encodeURIComponent(name)}?season=${encodeURIComponent(season)}`}
+                href={`/masl/team/${encodeURIComponent(name)}?season=${encodeURIComponent(season)}&sport=${encodeURIComponent(activeTab)}`}
                 key={name}
                 className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-4 transition-colors hover:border-edge-strong hover:bg-raised"
               >

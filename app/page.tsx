@@ -13,14 +13,18 @@ export default function HomePage() {
       bg: "/images/match_bg_2.png",
       teamA: "빵빵이의 축구교실",
       teamB: "김영준에게 축구를 배우다",
-      date: "APRIL 02 / 19:30 KST"
+      date: "APRIL 02 / 19:30 KST",
+      season: "26 spring",
+      sport: "남자축구"
     },
     {
       id: 2,
       bg: "/images/match_bg_1.png",
       teamA: "옥지의 축구교실",
       teamB: "바르셨노라",
-      date: "APRIL 02 / 19:00 KST"
+      date: "APRIL 02 / 19:00 KST",
+      season: "26 spring",
+      sport: "여자축구"
     }
   ];
 
@@ -69,7 +73,7 @@ export default function HomePage() {
               {/* 팀 로고 — 클릭 시 팀 페이지로 이동 */}
               <div className="relative z-10 flex h-full items-center justify-center gap-4 px-6 pb-10 md:gap-8 md:px-12">
                 <Link
-                  href={`/masl/team/${encodeURIComponent(match.teamA)}`}
+                  href={`/masl/team/${encodeURIComponent(match.teamA)}?season=${encodeURIComponent(match.season)}&sport=${encodeURIComponent(match.sport)}`}
                   tabIndex={idx === currentIdx ? 0 : -1}
                   className="flex h-3/4 w-1/2 items-center justify-center transition-opacity hover:opacity-80"
                 >
@@ -79,7 +83,7 @@ export default function HomePage() {
                   VS
                 </span>
                 <Link
-                  href={`/masl/team/${encodeURIComponent(match.teamB)}`}
+                  href={`/masl/team/${encodeURIComponent(match.teamB)}?season=${encodeURIComponent(match.season)}&sport=${encodeURIComponent(match.sport)}`}
                   tabIndex={idx === currentIdx ? 0 : -1}
                   className="flex h-3/4 w-1/2 items-center justify-center transition-opacity hover:opacity-80"
                 >
