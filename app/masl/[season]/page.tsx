@@ -8,6 +8,17 @@ import TeamLogo from '@/app/components/TeamLogo';
 
 type SportTab = '남자축구' | '여자축구' | '남자농구' | '여자배구';
 
+// 💡 경기 승자 판정: admin에서 승리 팀을 지정했으면 그 값을 쓰고,
+// 지정 전이라도 스코어가 입력돼 있으면(동점 제외) 스코어로 자동 판정합니다.
+function winnerOf(m: any): string | null {
+  if (!m) return null;
+  if (m.winnder_id) return m.winnder_id;
+  if (m.score_a !== null && m.score_a !== undefined && m.score_b !== null && m.score_b !== undefined && m.score_a !== m.score_b) {
+    return m.score_a > m.score_b ? m.team_a : m.team_b;
+  }
+  return null;
+}
+
 interface PageProps {
   params: Promise<{ season: string }>;
 }
@@ -99,7 +110,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
   const semi1 = semis.find(m => m.match_order === 1) || null;
   const semi2 = semis.find(m => m.match_order === 2) || null;
   const finalMatch = matches.find(m => m.round === 2) || null;
-  const championName = finalMatch?.winnder_id || null;
+  const championName = winnerOf(finalMatch);
 
   const hasBracket = !!(semi1 || semi2 || finalMatch || quarters.length > 0);
 
@@ -107,7 +118,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
   // 그 팀이 부전승으로 직행한 것으로 표시합니다. (별도 데이터 입력 불필요)
   const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean): string | null => {
     if (selfQf || !sf) return null;
-    const otherWinner = otherQf?.winnder_id || null;
+    const otherWinner = winnerOf(otherQf);
     const cands = [sf.team_a, sf.team_b].filter(Boolean).filter((t: string) => t !== otherWinner);
     if (cands.length === 1) return cands[0];
     if (cands.length === 2) return second ? cands[1] : cands[0];
@@ -138,11 +149,11 @@ export default function MaslSeasonPage({ params }: PageProps) {
 
   // 💡 다음 라운드 미리 채우기: 확정된 승자(또는 부전승 팀)가 있으면 이름을, 없으면 "QF n 승자"
   const sfSide = (n: number) => ({
-    team: qf(n)?.winnder_id || byes[n - 1] || null,
+    team: winnerOf(qf(n)) || byes[n - 1] || null,
     placeholder: `QF ${n} 승자`,
   });
   const finalSide = (n: number) => ({
-    team: (n === 1 ? semi1 : semi2)?.winnder_id || sfByes[n - 1] || null,
+    team: winnerOf(n === 1 ? semi1 : semi2) || sfByes[n - 1] || null,
     placeholder: `SF ${n} 승자`,
   });
 
@@ -419,8 +430,9 @@ function SemiCard({ match, label }: { match: any; label: string }) {
       </div>
     );
   }
-  const winA = match.winnder_id === match.team_a;
-  const winB = match.winnder_id === match.team_b;
+  const winner = winnerOf(match);
+  const winA = winner === match.team_a;
+  const winB = winner === match.team_b;
   return (
     <article className="w-full overflow-hidden rounded-xl border border-edge bg-raised shadow-lg shadow-black/25">
       {/* 헤더 스트립: 라운드 + 날짜 */}
@@ -493,8 +505,9 @@ function FinalCard({ match, compact = false }: { match: any; compact?: boolean }
       </div>
     );
   }
-  const winA = match.winnder_id === match.team_a;
-  const winB = match.winnder_id === match.team_b;
+  const winner = winnerOf(match);
+  const winA = winner === match.team_a;
+  const winB = winner === match.team_b;
   const decided = winA || winB;
   const hasScores =
     match.score_a !== undefined && match.score_a !== null &&
@@ -591,8 +604,9 @@ function CompactMatchCard({ match, label }: { match: any; label: string }) {
       </div>
     );
   }
-  const winA = match.winnder_id === match.team_a;
-  const winB = match.winnder_id === match.team_b;
+  const winner = winnerOf(match);
+  const winA = winner === match.team_a;
+  const winB = winner === match.team_b;
   return (
     <article className="w-full overflow-hidden rounded-xl border border-edge bg-raised shadow-lg shadow-black/25">
       <div className="border-b border-edge bg-canvas/40 px-3 py-1.5">
