@@ -81,6 +81,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
   }, [activeTab, season]);
 
   const quarters = matches.filter(m => m.round === 8);
+  const qf = (n: number) => quarters.find(m => m.match_order === n) || null;
   const semis = matches.filter(m => m.round === 4);
   const semi1 = semis.find(m => m.match_order === 1) || null;
   const semi2 = semis.find(m => m.match_order === 2) || null;
@@ -143,20 +144,6 @@ export default function MaslSeasonPage({ params }: PageProps) {
             <p className="mt-1 text-sm text-fg-dim">대진이 확정되면 이곳에 표시됩니다.</p>
           </div>
         ) : (
-          <>
-          {/* 8강 — 있는 종목(남자농구 등)에만 표시됩니다 */}
-          {quarters.length > 0 && (
-            <div className="mb-4">
-              <p className="mb-3 font-display text-xs font-semibold uppercase tracking-[0.14em] text-fg-dim">
-                Quarter Finals · 8강
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {quarters.map(q => (
-                  <SemiCard key={q.id} match={q} label={`8강 ${q.match_order}경기`} />
-                ))}
-              </div>
-            </div>
-          )}
           <div className="relative overflow-hidden rounded-2xl border border-edge bg-surface/60 px-4 py-10 sm:px-6 md:px-8 md:py-14">
             {/* 배경 모티프 — 경기장 센터 서클 + 하프라인 + 상단 조명 */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0">
@@ -166,19 +153,48 @@ export default function MaslSeasonPage({ params }: PageProps) {
               <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(14,165,233,0.09),transparent_70%)]" />
             </div>
 
-            {/* 데스크톱: SF1 ─→ FINAL ←─ SF2 */}
-            <div className="relative hidden md:grid md:grid-cols-[1fr_2.5rem_minmax(320px,400px)_2.5rem_1fr] md:items-center">
-              <SemiCard match={semi1} label="Semi Final 1" />
-              <Connector active={!!championName} />
-              <div className="flex flex-col gap-4">
-                {championName && <ChampionCrest name={championName} season={season} />}
-                <FinalCard match={finalMatch} />
+            {quarters.length > 0 ? (
+              /* ── 데스크톱 8강 풀 브래킷: QF ─→ SF ─→ FINAL ←─ SF ←─ QF ── */
+              <div className="relative hidden md:grid md:grid-cols-[1fr_1.25rem_1fr_1.25rem_minmax(230px,300px)_1.25rem_1fr_1.25rem_1fr] md:items-stretch">
+                {/* 8강 왼쪽 (1·2경기) */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(1)} label="QF 1" /></div>
+                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(2)} label="QF 2" /></div>
+                </div>
+                <MergeConnector active={!!semi1} />
+                {/* 4강 왼쪽 */}
+                <div className="flex items-center"><CompactMatchCard match={semi1} label="SF 1" /></div>
+                <Connector active={!!championName} />
+                {/* 결승 + 챔피언 (중앙) */}
+                <div className="flex flex-col justify-center gap-3">
+                  {championName && <ChampionCrest name={championName} season={season} />}
+                  <FinalCard match={finalMatch} compact />
+                </div>
+                <Connector active={!!championName} flip />
+                {/* 4강 오른쪽 */}
+                <div className="flex items-center"><CompactMatchCard match={semi2} label="SF 2" /></div>
+                <MergeConnector active={!!semi2} flip />
+                {/* 8강 오른쪽 (3·4경기) */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(3)} label="QF 3" /></div>
+                  <div className="flex flex-1 items-center"><CompactMatchCard match={qf(4)} label="QF 4" /></div>
+                </div>
               </div>
-              <Connector active={!!championName} flip />
-              <SemiCard match={semi2} label="Semi Final 2" />
-            </div>
+            ) : (
+              /* ── 데스크톱 4강 브래킷: SF1 ─→ FINAL ←─ SF2 ── */
+              <div className="relative hidden md:grid md:grid-cols-[1fr_2.5rem_minmax(320px,400px)_2.5rem_1fr] md:items-center">
+                <SemiCard match={semi1} label="Semi Final 1" />
+                <Connector active={!!championName} />
+                <div className="flex flex-col gap-4">
+                  {championName && <ChampionCrest name={championName} season={season} />}
+                  <FinalCard match={finalMatch} />
+                </div>
+                <Connector active={!!championName} flip />
+                <SemiCard match={semi2} label="Semi Final 2" />
+              </div>
+            )}
 
-            {/* 모바일: 챔피언 → 결승 → 4강 순 세로 스택 */}
+            {/* ── 모바일: 챔피언 → 결승 → 4강 → 8강 순 세로 스택 ── */}
             <div className="relative space-y-4 md:hidden">
               {championName && <ChampionCrest name={championName} season={season} />}
               <FinalCard match={finalMatch} />
@@ -193,9 +209,24 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <SemiCard match={semi1} label="Semi Final 1" />
                 <SemiCard match={semi2} label="Semi Final 2" />
               </div>
+              {quarters.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 pt-2" aria-hidden="true">
+                    <div className="h-px flex-1 bg-edge" />
+                    <span className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-fg-dim">
+                      Quarter Finals
+                    </span>
+                    <div className="h-px flex-1 bg-edge" />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {[1, 2, 3, 4].map(n => (
+                      <SemiCard key={n} match={qf(n)} label={`Quarter Final ${n}`} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
-          </>
         )}
       </section>
 
@@ -333,7 +364,7 @@ function SemiRow({ name, season, score, win }: { name: string; season?: string; 
 }
 
 /* 결승 카드 — 로고 페이스오프 + 대형 스코어 */
-function FinalCard({ match }: { match: any }) {
+function FinalCard({ match, compact = false }: { match: any; compact?: boolean }) {
   if (!match) {
     return (
       <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-edge bg-surface/70 px-6 py-12 text-center">
@@ -351,7 +382,7 @@ function FinalCard({ match }: { match: any }) {
     match.score_a !== undefined && match.score_a !== null &&
     match.score_b !== undefined && match.score_b !== null;
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-accent/30 bg-raised p-5 shadow-xl shadow-black/30 md:p-6">
+    <article className={`relative overflow-hidden rounded-2xl border border-accent/30 bg-raised shadow-xl shadow-black/30 ${compact ? 'p-4' : 'p-5 md:p-6'}`}>
       {/* 카드 상단 조명 */}
       <div
         aria-hidden="true"
@@ -373,9 +404,9 @@ function FinalCard({ match }: { match: any }) {
         )}
       </div>
       <div className="relative mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-        <FinalSide name={match.team_a} season={match.season} win={winA} />
+        <FinalSide name={match.team_a} season={match.season} win={winA} compact={compact} />
         {hasScores ? (
-          <p className="px-1 font-display text-4xl font-medium leading-none tabular-nums md:text-5xl">
+          <p className={`px-1 font-display font-medium leading-none tabular-nums ${compact ? 'text-3xl' : 'text-4xl md:text-5xl'}`}>
             <span className={winA ? 'text-fg' : 'text-fg-dim'}>{match.score_a}</span>
             <span className="px-1.5 text-fg-dim md:px-2">:</span>
             <span className={winB ? 'text-fg' : 'text-fg-dim'}>{match.score_b}</span>
@@ -383,25 +414,25 @@ function FinalCard({ match }: { match: any }) {
         ) : (
           <p className="px-2 font-display text-2xl font-medium uppercase text-fg-dim">VS</p>
         )}
-        <FinalSide name={match.team_b} season={match.season} win={winB} />
+        <FinalSide name={match.team_b} season={match.season} win={winB} compact={compact} />
       </div>
     </article>
   );
 }
 
-function FinalSide({ name, season, win }: { name: string; season?: string; win: boolean }) {
+function FinalSide({ name, season, win, compact = false }: { name: string; season?: string; win: boolean; compact?: boolean }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center">
       {/* 로고 웰 — 승자는 액센트 프레임 */}
       <span
-        className={`flex h-20 w-20 items-center justify-center rounded-xl border p-2 md:h-24 md:w-24 ${
+        className={`flex items-center justify-center rounded-xl border p-2 ${compact ? 'h-14 w-14' : 'h-20 w-20 md:h-24 md:w-24'} ${
           win ? 'border-accent/30 bg-accent/5' : 'border-edge bg-canvas/40 opacity-60'
         }`}
       >
         <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
       <p
-        className={`w-full truncate text-sm font-semibold leading-[1.4] ${
+        className={`w-full truncate font-semibold leading-[1.4] ${compact ? 'text-xs' : 'text-sm'} ${
           win ? 'text-fg' : 'text-fg-dim'
         }`}
       >
@@ -427,6 +458,66 @@ function ChampionCrest({ name, season }: { name: string; season: string }) {
         </p>
         <p className="truncate text-lg font-bold leading-[1.3] text-fg">{name}</p>
       </div>
+    </div>
+  );
+}
+
+
+/* 8강 브래킷용 컴팩트 경기 카드 — 좁은 칼럼에서도 읽히는 축약형 */
+function CompactMatchCard({ match, label }: { match: any; label: string }) {
+  if (!match) {
+    return (
+      <div className="flex w-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-edge bg-surface/70 px-3 py-5 text-center">
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">{label}</p>
+        <p className="text-xs font-semibold text-fg-mid">대진 미정</p>
+      </div>
+    );
+  }
+  const winA = match.winnder_id === match.team_a;
+  const winB = match.winnder_id === match.team_b;
+  return (
+    <article className="w-full overflow-hidden rounded-xl border border-edge bg-raised shadow-lg shadow-black/25">
+      <div className="border-b border-edge bg-canvas/40 px-3 py-1.5">
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">{label}</p>
+      </div>
+      <div className="space-y-1 p-2">
+        <CompactRow name={match.team_a} season={match.season} score={match.score_a} win={winA} />
+        <CompactRow name={match.team_b} season={match.season} score={match.score_b} win={winB} />
+      </div>
+    </article>
+  );
+}
+
+function CompactRow({ name, season, score, win }: { name: string; season?: string; score?: number; win: boolean }) {
+  return (
+    <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${win ? 'bg-accent/10' : ''}`}>
+      <span
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-edge bg-canvas/60 p-0.5 ${win ? '' : 'opacity-60'}`}
+      >
+        <TeamLogo name={name} season={season} className="h-full w-full" />
+      </span>
+      <span className={`min-w-0 flex-1 truncate text-xs font-semibold leading-[1.4] ${win ? 'text-fg' : 'text-fg-dim'}`}>
+        {name || 'TBD'}
+      </span>
+      {score !== undefined && score !== null && (
+        <span className={`font-display text-base font-medium leading-none tabular-nums ${win ? 'text-accent-bright' : 'text-fg-dim'}`}>
+          {score}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* 8강 두 경기의 승자가 4강에서 만나는 병합 연결선.
+   flip=false: 왼쪽 열(입력 왼쪽 → 출력 오른쪽), flip=true: 미러. */
+function MergeConnector({ active, flip = false }: { active: boolean; flip?: boolean }) {
+  const line = active ? 'border-accent/60' : 'border-edge-strong';
+  return (
+    <div className="relative self-stretch" aria-hidden="true">
+      <div className={`absolute top-1/4 border-t ${line} ${flip ? 'left-1/2 right-0' : 'left-0 right-1/2'}`} />
+      <div className={`absolute bottom-1/4 border-t ${line} ${flip ? 'left-1/2 right-0' : 'left-0 right-1/2'}`} />
+      <div className={`absolute bottom-1/4 top-1/4 left-1/2 border-l ${line}`} />
+      <div className={`absolute top-1/2 border-t ${line} ${flip ? 'left-0 right-1/2' : 'left-1/2 right-0'}`} />
     </div>
   );
 }
