@@ -107,6 +107,12 @@ export default function MaslSeasonPage({ params }: PageProps) {
     byeFor(semi2, qf(4), qf(3), true),
   ];
 
+  // 4강 부전승: 4강 경기 없이 결승으로 직행한 팀 (결승 경기에서 자동 감지)
+  const sfByes = [
+    byeFor(finalMatch, semi1, semi2, false),
+    byeFor(finalMatch, semi2, semi1, true),
+  ];
+
   // QF 슬롯: 경기 있음 → 카드 / 부전승 → BYE 카드 / 둘 다 아니면 대진 미정
   const qfSlotCard = (n: number, label: string) =>
     qf(n) ? (
@@ -123,7 +129,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
     placeholder: `QF ${n} 승자`,
   });
   const finalSide = (n: number) => ({
-    team: (n === 1 ? semi1 : semi2)?.winnder_id || null,
+    team: (n === 1 ? semi1 : semi2)?.winnder_id || sfByes[n - 1] || null,
     placeholder: `SF ${n} 승자`,
   });
 
@@ -203,6 +209,8 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <div className="flex items-center">
                   {semi1 ? (
                     <CompactMatchCard match={semi1} label="SF 1" />
+                  ) : sfByes[0] ? (
+                    <ByeCard team={sfByes[0] as string} season={season} label="SF 1" />
                   ) : (
                     <PendingMatchCard label="SF 1" a={sfSide(1)} b={sfSide(2)} season={season} />
                   )}
@@ -222,6 +230,8 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <div className="flex items-center">
                   {semi2 ? (
                     <CompactMatchCard match={semi2} label="SF 2" />
+                  ) : sfByes[1] ? (
+                    <ByeCard team={sfByes[1] as string} season={season} label="SF 2" />
                   ) : (
                     <PendingMatchCard label="SF 2" a={sfSide(3)} b={sfSide(4)} season={season} />
                   )}
@@ -236,7 +246,13 @@ export default function MaslSeasonPage({ params }: PageProps) {
             ) : (
               /* ── 데스크톱 4강 브래킷: SF1 ─→ FINAL ←─ SF2 ── */
               <div className="relative hidden md:grid md:grid-cols-[1fr_2.5rem_minmax(320px,400px)_2.5rem_1fr] md:items-center">
-                <SemiCard match={semi1} label="Semi Final 1" />
+                {semi1 ? (
+                  <SemiCard match={semi1} label="Semi Final 1" />
+                ) : sfByes[0] ? (
+                  <ByeCard team={sfByes[0] as string} season={season} label="Semi Final 1" />
+                ) : (
+                  <SemiCard match={null} label="Semi Final 1" />
+                )}
                 <Connector active={!!championName} />
                 <div className="flex flex-col gap-4">
                   {championName && <ChampionCrest name={championName} season={season} />}
@@ -247,7 +263,13 @@ export default function MaslSeasonPage({ params }: PageProps) {
                   )}
                 </div>
                 <Connector active={!!championName} flip />
-                <SemiCard match={semi2} label="Semi Final 2" />
+                {semi2 ? (
+                  <SemiCard match={semi2} label="Semi Final 2" />
+                ) : sfByes[1] ? (
+                  <ByeCard team={sfByes[1] as string} season={season} label="Semi Final 2" />
+                ) : (
+                  <SemiCard match={null} label="Semi Final 2" />
+                )}
               </div>
             )}
 
@@ -267,13 +289,21 @@ export default function MaslSeasonPage({ params }: PageProps) {
                 <div className="h-px flex-1 bg-edge" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                {semi1 || quarters.length === 0 ? (
+                {semi1 ? (
                   <SemiCard match={semi1} label="Semi Final 1" />
+                ) : sfByes[0] ? (
+                  <ByeCard team={sfByes[0] as string} season={season} label="Semi Final 1" />
+                ) : quarters.length === 0 ? (
+                  <SemiCard match={null} label="Semi Final 1" />
                 ) : (
                   <PendingMatchCard label="Semi Final 1" a={sfSide(1)} b={sfSide(2)} season={season} />
                 )}
-                {semi2 || quarters.length === 0 ? (
+                {semi2 ? (
                   <SemiCard match={semi2} label="Semi Final 2" />
+                ) : sfByes[1] ? (
+                  <ByeCard team={sfByes[1] as string} season={season} label="Semi Final 2" />
+                ) : quarters.length === 0 ? (
+                  <SemiCard match={null} label="Semi Final 2" />
                 ) : (
                   <PendingMatchCard label="Semi Final 2" a={sfSide(3)} b={sfSide(4)} season={season} />
                 )}
