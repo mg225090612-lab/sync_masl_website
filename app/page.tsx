@@ -42,9 +42,10 @@ export default function HomePage() {
             당신의 한 표가 이번 시즌 최고의 선수를 결정합니다.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
+            {/* 수정된 GVR 평점 남기기 버튼 (오른쪽 버튼과 동일한 배경, 흰색 글씨) */}
             <Link 
               href="/gvr/rate" 
-              className="flex items-center justify-center rounded-full bg-fg px-8 py-3.5 text-sm font-semibold text-canvas transition-opacity hover:opacity-80"
+              className="flex items-center justify-center rounded-full border border-edge bg-surface px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-raised"
             >
               GVR 평점 남기기
             </Link>
