@@ -1,142 +1,65 @@
-﻿'use client';
+import Link from "next/link";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import TeamLogo from '@/app/components/TeamLogo';
-
-export default function HomePage() {
-  const [currentIdx, setCurrentIdx] = useState(0);
-
-  const matches = [
-    {
-      id: 1,
-      bg: "/images/match_bg_2.png",
-      teamA: "빵빵이의 축구교실",
-      teamB: "김영준에게 축구를 배우다",
-      date: "APRIL 02 / 19:30 KST",
-      season: "26 spring",
-      sport: "남자축구"
-    },
-    {
-      id: 2,
-      bg: "/images/match_bg_1.png",
-      teamA: "옥지의 축구교실",
-      teamB: "바르셨노라",
-      date: "APRIL 02 / 19:00 KST",
-      season: "26 spring",
-      sport: "여자축구"
-    }
-  ];
-
-  const nextSlide = () => setCurrentIdx((prev) => (prev + 1) % matches.length);
-  const prevSlide = () => setCurrentIdx((prev) => (prev - 1 + matches.length) % matches.length);
-
+export default function Home() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-10 pb-24 sm:px-6 md:pt-14">
+    <main className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-black text-white overflow-hidden px-4">
+      {/* 어두운 스포트라이트 / 조명 배경 효과 */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black z-0 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full z-0 pointer-events-none" />
 
-      {/* 페이지 헤더 (spec §5.3) */}
-      <header className="mb-10 border-b border-edge pb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
-          MASL Live Event
-        </p>
-        <h1 className="mt-3 font-display text-4xl font-semibold uppercase leading-[1.1] text-fg md:text-6xl">
-          Upcoming Matches
+      {/* 메인 콘텐츠 영역 */}
+      <div className="relative z-10 max-w-4xl text-center space-y-8">
+        {/* 서브 상단 뱃지 */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs sm:text-sm font-medium tracking-wider uppercase">
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          MASL GVR Evaluation System
+        </div>
+
+        {/* 메인 타이틀 */}
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-tight">
+          평가하라, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-500">증명하라.</span>
+          <br />
+          <span className="text-3xl sm:text-5xl md:text-6xl text-slate-200">MASL 2026</span>
         </h1>
-        <p className="mt-4 max-w-xl text-[15px] leading-[1.65] text-fg-mid">
-          이번 주 예정된 경기를 확인하세요. 팀 로고를 누르면 팀 페이지로 이동합니다.
+
+        {/* 설명 문구 */}
+        <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-400 leading-relaxed font-light">
+          경기 후 선수의 퍼포먼스를 내 손으로 직접 평가하세요. <br className="hidden sm:inline" />
+          당신의 한 표가 이번 시즌 Best Player를 결정합니다.
         </p>
-      </header>
 
-      {/* 경기 슬라이더 — 히어로 미디어 프레임 (spec §5.16) */}
-      <section aria-label="예정된 경기 슬라이더">
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-edge bg-surface md:aspect-[21/9]">
-          {matches.map((match, idx) => (
-            <div
-              key={match.id}
-              className={`absolute inset-0 h-full w-full transition-opacity duration-500 motion-reduce:transition-none ${
-                idx === currentIdx
-                  ? 'z-10 opacity-100 pointer-events-auto'
-                  : 'z-0 opacity-0 pointer-events-none'
-              }`}
-              aria-hidden={idx !== currentIdx}
-            >
-              {/* 배경 이미지 */}
-              <img
-                src={match.bg}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover opacity-60"
-              />
-
-              {/* 가독성 스크림 — 미디어 위에 허용된 유일한 그라디언트 (spec §5.16) */}
-              <div className="absolute inset-0 bg-gradient-to-t from-canvas/90 via-canvas/25 to-transparent" />
-
-              {/* 팀 로고 — 클릭 시 팀 페이지로 이동 */}
-              <div className="relative z-10 flex h-full items-center justify-center gap-4 px-6 pb-10 md:gap-8 md:px-12">
-                <Link
-                  href={`/masl/team/${encodeURIComponent(match.teamA)}?season=${encodeURIComponent(match.season)}&sport=${encodeURIComponent(match.sport)}`}
-                  tabIndex={idx === currentIdx ? 0 : -1}
-                  className="flex h-3/4 w-1/2 items-center justify-center transition-opacity hover:opacity-80"
-                >
-                  <TeamLogo name={match.teamA} className="h-full w-full" />
-                </Link>
-                <span className="shrink-0 font-display text-xl font-medium uppercase text-fg-dim md:text-2xl">
-                  VS
-                </span>
-                <Link
-                  href={`/masl/team/${encodeURIComponent(match.teamB)}?season=${encodeURIComponent(match.season)}&sport=${encodeURIComponent(match.sport)}`}
-                  tabIndex={idx === currentIdx ? 0 : -1}
-                  className="flex h-3/4 w-1/2 items-center justify-center transition-opacity hover:opacity-80"
-                >
-                  <TeamLogo name={match.teamB} className="h-full w-full" />
-                </Link>
-              </div>
-
-              {/* 메타 바 — 날짜(좌) / 상태(우) */}
-              <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between p-5 md:p-6">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-edge bg-surface px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-fg-mid">
-                  {match.date}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
-                  Upcoming
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {/* 화살표 — 프레임 안쪽 (spec §5.16) */}
-          <button
-            onClick={prevSlide}
-            aria-label="이전 경기"
-            className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-edge bg-canvas/70 text-fg backdrop-blur transition-colors hover:bg-raised"
+        {/* 버튼 영역 */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <Link
+            href="/gvr/rate"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-lg hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-lg shadow-blue-500/25 hover:scale-105 active:scale-95 text-center"
           >
-            <span aria-hidden="true">‹</span>
-          </button>
-          <button
-            onClick={nextSlide}
-            aria-label="다음 경기"
-            className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-edge bg-canvas/70 text-fg backdrop-blur transition-colors hover:bg-raised"
+            GVR 평점 남기기
+          </Link>
+          <Link
+            href="/gvr/view"
+            className="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-700 bg-slate-900/60 text-slate-200 font-semibold text-lg hover:bg-slate-800 hover:border-slate-600 transition-all duration-200 backdrop-blur-sm hover:scale-105 active:scale-95 text-center"
           >
-            <span aria-hidden="true">›</span>
-          </button>
+            현재 GVR 랭킹
+          </Link>
         </div>
 
-        {/* 하단 도트 */}
-        <div className="mt-4 flex justify-center gap-2">
-          {matches.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentIdx(idx)}
-              aria-label={`${idx + 1}번째 경기 보기`}
-              aria-current={idx === currentIdx}
-              className={
-                idx === currentIdx
-                  ? 'h-1.5 w-6 rounded-full bg-accent'
-                  : 'h-1.5 w-1.5 rounded-full bg-edge-strong transition-colors hover:bg-fg-dim'
-              }
-            />
-          ))}
+        {/* 하단 요약 정보 */}
+        <div className="pt-12 grid grid-cols-3 gap-4 border-t border-slate-800/80 max-w-2xl mx-auto text-slate-400 text-xs sm:text-sm">
+          <div>
+            <p className="font-bold text-slate-200 text-base sm:text-lg">REAL-TIME</p>
+            <p className="text-slate-500 text-xs mt-0.5">실시간 평점 반영</p>
+          </div>
+          <div>
+            <p className="font-bold text-slate-200 text-base sm:text-lg">FAIR</p>
+            <p className="text-slate-500 text-xs mt-0.5">객관적 평가 데이터</p>
+          </div>
+          <div>
+            <p className="font-bold text-slate-200 text-base sm:text-lg">SEASON MVP</p>
+            <p className="text-slate-500 text-xs mt-0.5">최우수 선수 선정</p>
+          </div>
         </div>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }
