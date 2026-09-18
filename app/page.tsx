@@ -31,7 +31,7 @@ export default function HomePage() {
         <div className="flex-[1.2] flex flex-col justify-center rounded-2xl border border-edge bg-surface p-8 lg:p-12 relative overflow-hidden">
           <div className="space-y-2 mb-8">
             <h1 className="font-display text-5xl sm:text-6xl font-semibold uppercase leading-[1.1] text-fg">
-              평가하라, 증명하라.
+              Assess the Field, Validate the Grade.
             </h1>
             <h2 className="font-display text-4xl sm:text-5xl font-semibold uppercase text-fg-dim">
               MASL 2026
