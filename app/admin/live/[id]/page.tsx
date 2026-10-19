@@ -118,9 +118,17 @@ function Scorer({ id }: { id: string }) {
     await updateMatch({ status: 'live', score_a: match.score_a ?? 0, score_b: match.score_b ?? 0 });
   };
 
-  const addScore = (side: 'a' | 'b', delta: number) => {
-    const next = Math.max(0, (side === 'a' ? a : b) + delta);
-    updateMatch(side === 'a' ? { score_a: next } : { score_b: next });
+  // 💡 점수를 바꾸면 타임라인에도 자동으로 한 줄 올라갑니다. (위 '분' 칸에 숫자가 있으면 함께 기록)
+  const addScore = async (side: 'a' | 'b', delta: number) => {
+    const current = side === 'a' ? a : b;
+    const next = Math.max(0, current + delta);
+    if (next === current) return;
+    const ok = await updateMatch(side === 'a' ? { score_a: next } : { score_b: next });
+    if (!ok) return;
+    const team = side === 'a' ? match.team_a : match.team_b;
+    const na = side === 'a' ? next : a;
+    const nb = side === 'b' ? next : b;
+    await insertEvent(delta > 0 ? `${team} 득점! (${na} : ${nb})` : `${team} 득점 취소 (${na} : ${nb})`);
   };
 
   const end = async () => {
@@ -137,9 +145,7 @@ function Scorer({ id }: { id: string }) {
     await updateMatch({ status: 'live', winnder_id: null });
   };
 
-  const postEvent = async () => {
-    const text = content.trim();
-    if (!text) return;
+  const insertEvent = async (text: string) => {
     setBusy(true);
     const { data, error } = await supabase
       .from('match_events')
@@ -147,9 +153,15 @@ function Scorer({ id }: { id: string }) {
       .select()
       .maybeSingle();
     setBusy(false);
-    if (error) return alert('올리기 실패: ' + error.message);
+    if (error) { alert('타임라인 올리기 실패: ' + error.message); return false; }
     if (data) setEvents(prev => (prev.some(e => e.id === data.id) ? prev : [data as MatchEvent, ...prev]));
-    setContent('');
+    return true;
+  };
+
+  const postEvent = async () => {
+    const text = content.trim();
+    if (!text) return;
+    if (await insertEvent(text)) setContent('');
   };
 
   const removeEvent = async (ev: MatchEvent) => {
@@ -159,10 +171,8 @@ function Scorer({ id }: { id: string }) {
     setEvents(prev => prev.filter(e => e.id !== ev.id));
   };
 
-  // 자주 쓰는 문장 — 누르면 입력칸에 채워집니다.
+  // 자주 쓰는 문장 — 누르면 입력칸에 채워집니다. (득점은 +1 버튼이 자동으로 올립니다)
   const presets = [
-    `${match.team_a} 득점!`,
-    `${match.team_b} 득점!`,
     '전반 종료',
     '후반 시작',
     '타임아웃',
@@ -221,6 +231,7 @@ function Scorer({ id }: { id: string }) {
       {/* 타임라인 소식 */}
       <section className="rounded-2xl border border-edge bg-surface p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-fg">타임라인 소식 올리기</h2>
+        <p className="mt-1 text-xs text-fg-dim">점수 버튼을 누르면 &quot;득점!&quot; 소식이 자동으로 올라갑니다. &apos;분&apos; 칸을 채워두면 시간도 함께 기록돼요.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {presets.map(p => (
             <button key={p} onClick={() => setContent(p)}
