@@ -140,6 +140,18 @@ function Scorer({ id }: { id: string }) {
     await updateMatch({ status: 'finished', winnder_id: winner });
   };
 
+  // 테스트로 눌러본 경기 등을 완전히 처음 상태로 돌립니다. (점수·승리 팀·타임라인 모두 삭제)
+  const resetToScheduled = async () => {
+    if (!confirm(`[${match.team_a} vs ${match.team_b}] 경기를 '경기 전'으로 되돌릴까요?
+점수, 승리 팀, 타임라인 소식이 모두 지워집니다.`)) return;
+    setBusy(true);
+    const { error } = await supabase.from('match_events').delete().eq('match_id', match.id);
+    setBusy(false);
+    if (error) return alert('타임라인 삭제 실패: ' + error.message);
+    setEvents([]);
+    await updateMatch({ status: 'scheduled', score_a: null, score_b: null, winnder_id: null });
+  };
+
   const reopen = async () => {
     if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?')) return;
     await updateMatch({ status: 'live', winnder_id: null });
@@ -224,6 +236,12 @@ function Scorer({ id }: { id: string }) {
           )}
           {!isLive && !isFinished && (
             <p className="mt-2 text-center text-xs text-fg-dim">경기를 시작해야 점수 버튼이 눌립니다.</p>
+          )}
+          {(isLive || isFinished) && (
+            <button onClick={resetToScheduled} disabled={busy}
+              className="mt-3 w-full text-center text-xs font-medium text-fg-dim underline-offset-2 transition-colors hover:text-danger hover:underline disabled:opacity-50">
+              경기 전으로 되돌리기 (테스트 기록 지우기)
+            </button>
           )}
         </div>
       </section>

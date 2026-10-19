@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { uniqueChannel, minuteLabel, type MatchEvent } from '@/lib/live';
+import { uniqueChannel, minuteLabel, isDone, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
 
@@ -76,11 +76,12 @@ export default function LivePage({ params }: PageProps) {
   }
 
   const isLive = match.status === 'live';
-  const isFinished = match.status === 'finished';
+  const isFinished = isDone(match);
   const a = match.score_a ?? 0;
   const b = match.score_b ?? 0;
-  const winA = isFinished && a > b;
-  const winB = isFinished && b > a;
+  // 승리 팀이 지정돼 있으면 그 값을, 없으면 점수로 판단
+  const winA = isFinished && (match.winnder_id ? match.winnder_id === match.team_a : a > b);
+  const winB = isFinished && (match.winnder_id ? match.winnder_id === match.team_b : b > a);
   // 최신 소식이 맨 위로
   const timeline = [...events].reverse();
 
@@ -114,9 +115,9 @@ export default function LivePage({ params }: PageProps) {
         <div className="relative mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
           <Side name={match.team_a} season={match.season} dim={isFinished && !winA} />
           <p className="px-1 font-display text-5xl font-medium leading-none tabular-nums md:text-7xl">
-            <span className={isFinished && !winA ? 'text-fg-dim' : 'text-fg'}>{a}</span>
+            <span className={isFinished && !winA ? 'text-fg-dim' : 'text-fg'}>{isLive ? a : match.score_a ?? '-'}</span>
             <span className="px-2 text-fg-dim md:px-3">:</span>
-            <span className={isFinished && !winB ? 'text-fg-dim' : 'text-fg'}>{b}</span>
+            <span className={isFinished && !winB ? 'text-fg-dim' : 'text-fg'}>{isLive ? b : match.score_b ?? '-'}</span>
           </p>
           <Side name={match.team_b} season={match.season} dim={isFinished && !winB} />
         </div>

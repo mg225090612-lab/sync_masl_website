@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { useLiveMatches } from '@/lib/live';
+import { useLiveMatches, isDone, startOfToday } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
 
 // 💡 라이브 모아보기 (/live) — 메뉴의 "Live"를 누르면 오는 곳입니다.
 // 진행 중인 경기는 실시간으로, 예정·종료 경기는 처음 열 때 한 번 불러옵니다.
+// 끝난 경기의 점수는 DB(matches)에 남아 있어서 언제든 다시 볼 수 있습니다.
 export default function LiveHubPage() {
   const live = useLiveMatches();
   const [upcoming, setUpcoming] = useState<any[]>([]);
@@ -21,18 +22,19 @@ export default function LiveHubPage() {
         .from('matches')
         .select('*')
         .eq('status', 'scheduled')
-        .gte('match_date', new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()) // 오늘 경기 포함
+        .gte('match_date', new Date(startOfToday()).toISOString()) // 오늘 경기 포함
         .order('match_date', { ascending: true })
-        .limit(8),
+        .limit(10),
+      // 끝난 경기: 라이브로 종료한 경기 + 예전에 '경기 관리'에서 결과만 넣어둔 지난 경기
       supabase
         .from('matches')
         .select('*')
-        .eq('status', 'finished')
+        .or(`status.eq.finished,match_date.lt.${new Date(startOfToday()).toISOString()}`)
         .order('match_date', { ascending: false })
-        .limit(8),
+        .limit(60),
     ]).then(([{ data: up }, { data: fin }]) => {
       setUpcoming(up || []);
-      setFinished(fin || []);
+      setFinished((fin || []).filter(isDone).slice(0, 30));
       setLoading(false);
     });
   }, []);
@@ -100,7 +102,7 @@ function Skeleton() {
 
 function MatchItem({ match }: { match: any }) {
   const isLive = match.status === 'live';
-  const isScheduled = match.status === 'scheduled';
+  const isScheduled = !isLive && !isDone(match);
   return (
     <Link
       href={`/live/${match.id}`}
@@ -126,11 +128,13 @@ function MatchItem({ match }: { match: any }) {
           <TeamLogo name={match.team_b} season={match.season} className="h-6 w-6 shrink-0" />
         </div>
       </div>
-      {!isScheduled && (
+      {!isScheduled && (match.score_a !== null || isLive) ? (
         <p className="shrink-0 font-display text-2xl font-medium tabular-nums text-fg">
           {match.score_a ?? 0} : {match.score_b ?? 0}
         </p>
-      )}
+      ) : !isScheduled && match.winnder_id ? (
+        <p className="max-w-24 shrink-0 truncate text-xs font-semibold text-accent-bright">{match.winnder_id} 승</p>
+      ) : null}
     </Link>
   );
 }

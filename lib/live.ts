@@ -69,3 +69,37 @@ export function useLiveMatches() {
 export function minuteLabel(minute: number | null) {
   return minute === null || minute === undefined ? '' : `${minute}'`;
 }
+
+/** 오늘 0시 (오늘 경기는 '다가올 경기'로 취급하기 위한 기준) */
+export function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function timeOf(m: any) {
+  return m.match_date ? new Date(m.match_date).getTime() : Infinity; // 날짜 없는 경기는 '다가올 경기' 맨 뒤
+}
+
+/** 다가올 경기인가요? (오늘 경기 포함) */
+export function isUpcoming(m: any) {
+  return timeOf(m) >= startOfToday();
+}
+
+/**
+ * 결과가 이미 나온 경기인가요?
+ * 라이브 기능 전에 '경기 관리' 탭에서 점수/승리 팀만 넣어둔 지난 경기도 끝난 경기로 봅니다.
+ */
+export function isDone(m: any) {
+  if (m.status === 'finished') return true;
+  if (m.status === 'live') return false;
+  const hasResult = !!m.winnder_id || (m.score_a !== null && m.score_a !== undefined);
+  return hasResult && !isUpcoming(m);
+}
+
+/** 다가올 경기를 앞(가까운 날짜순)으로, 지난 경기를 뒤(최근순)로 정렬합니다. */
+export function sortUpcomingFirst<T>(list: T[]): T[] {
+  const upcoming = list.filter(isUpcoming).sort((x, y) => timeOf(x) - timeOf(y));
+  const past = list.filter(m => !isUpcoming(m)).sort((x, y) => timeOf(y) - timeOf(x));
+  return [...upcoming, ...past];
+}

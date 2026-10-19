@@ -9,6 +9,7 @@ import { teamLogoPath } from '@/lib/teamLogo';
 import { fetchSeasons } from '@/lib/seasons';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
+import { isDone, isUpcoming, sortUpcomingFirst } from '@/lib/live';
 
 const SPORTS = ['남자축구', '여자축구', '남자농구', '여자배구'];
 
@@ -228,9 +229,10 @@ function MatchesAdmin() {
   // 💡 DB에 score_a/score_b 컬럼이 있으면 자동으로 스코어 입력칸이 나타납니다.
   const hasScoreCols = list.length > 0 && 'score_a' in list[0];
 
-  const filtered = list.filter(
+  // 💡 다가올 경기(가까운 날짜순)를 위로, 지난 경기(최근순)를 아래로 보여줍니다.
+  const filtered = sortUpcomingFirst(list.filter(
     m => (!filterSeason || m.season === filterSeason) && (!filterSport || m.sport_type === filterSport)
-  );
+  ));
 
   const afterWrite = async () => {
     invalidateCache(''); // 이 브라우저의 사이트 캐시 전체 비우기 (다른 방문자는 캐시 TTL 후 반영)
@@ -533,8 +535,11 @@ function LiveAdmin() {
 
   if (loading) return <div className="h-40 animate-pulse rounded-xl border border-edge bg-surface" />;
 
-  const live = list.filter(m => m.status === 'live');
-  const upcoming = list.filter(m => m.status !== 'live');
+  // 💡 진행 중 → 다가올 경기(가까운 날짜순) → 아직 결과가 없는 지난 경기 순서로 보여줍니다.
+  const sorted = sortUpcomingFirst(list);
+  const live = sorted.filter(m => m.status === 'live');
+  const upcoming = sorted.filter(m => m.status !== 'live' && isUpcoming(m));
+  const past = sorted.filter(m => m.status !== 'live' && !isUpcoming(m) && !isDone(m));
 
   return (
     <section className="space-y-8">
@@ -542,7 +547,8 @@ function LiveAdmin() {
         점수를 넣을 경기를 누르세요. 그 경기만 크게 보이는 점수 입력 화면이 열립니다.
       </p>
       {live.length > 0 && <LiveAdminGroup title="진행 중" matches={live} />}
-      <LiveAdminGroup title="예정된 경기" matches={upcoming} />
+      <LiveAdminGroup title="다가올 경기" matches={upcoming} />
+      {past.length > 0 && <LiveAdminGroup title="지난 경기 (결과 미입력)" matches={past} />}
     </section>
   );
 }
