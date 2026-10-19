@@ -67,8 +67,10 @@ function finalWinner(m: any): string | null {
   return null;
 }
 
-/** 팀 이름 → 우승 기록 목록 (최신순). 페이지마다 한 번만 불러오도록 10분 캐시합니다. */
-async function fetchTitles(): Promise<Record<string, ChampionTitle[]>> {
+type AutoChampion = { team: string; season: string; sport: string };
+
+/** 공식 기록(HALL_OF_FAME)에 아직 없는 시즌의 우승 팀을 DB 결승(round 2) 결과에서 찾습니다. */
+async function fetchAutoChampions(): Promise<AutoChampion[]> {
   const finals = await cachedQuery('champion-finals', 10 * 60 * 1000, async () => {
     const { data } = await supabase
       .from('matches')
@@ -77,29 +79,40 @@ async function fetchTitles(): Promise<Record<string, ChampionTitle[]>> {
     return data || [];
   });
 
-  const rows: { team: string; season: string; sport: string }[] = [];
   const seen = new Set<string>();
-  HALL_OF_FAME.forEach(item =>
-    item.history.forEach(h => {
-      seen.add(`${item.sport}|${norm(h.season)}`);
-      rows.push({ team: h.winner, season: h.season, sport: item.sport });
-    })
-  );
-  // 공식 기록에 아직 없는 시즌은 DB 결승 결과로 채웁니다. (진행 중인 결승은 제외)
+  HALL_OF_FAME.forEach(item => item.history.forEach(h => seen.add(`${item.sport}|${norm(h.season)}`)));
+  const auto: AutoChampion[] = [];
+  // 진행 중인 결승은 제외
   finals.forEach((m: any) => {
     const key = `${m.sport_type}|${norm(m.season || '')}`;
     const winner = m.status === 'live' ? null : finalWinner(m);
     if (!winner || !m.season || seen.has(key)) return;
     seen.add(key);
-    rows.push({ team: winner, season: m.season, sport: m.sport_type });
+    auto.push({ team: winner, season: m.season, sport: m.sport_type });
   });
+  return auto;
+}
 
-  const order = (s: string) => {
-    const m = s.match(/^(\d{2,4})\s*(\w+)?/);
-    const y = m ? Number(m[1]) : 0;
-    const t = m?.[2]?.toLowerCase() === 'fall' ? 1 : 0; // 같은 해면 가을이 봄보다 나중
-    return y * 10 + t;
-  };
+/** '26 fall' → '26 Fall' (Champions 페이지 표기에 맞춤) */
+function prettySeason(season: string) {
+  return season.replace(/\b([a-z])/g, c => c.toUpperCase());
+}
+
+/** 시즌 정렬용 숫자 (최신이 큼) */
+function seasonOrder(s: string) {
+  const m = s.match(/^(\d{2,4})\s*(\w+)?/);
+  const y = m ? Number(m[1]) : 0;
+  const t = m?.[2]?.toLowerCase() === 'fall' ? 1 : 0; // 같은 해면 가을이 봄보다 나중
+  return y * 10 + t;
+}
+
+/** 팀 이름 → 우승 기록 목록 (최신순). 페이지마다 한 번만 불러오도록 10분 캐시합니다. */
+async function fetchTitles(): Promise<Record<string, ChampionTitle[]>> {
+  const rows: AutoChampion[] = [];
+  HALL_OF_FAME.forEach(item => item.history.forEach(h => rows.push({ team: h.winner, season: h.season, sport: item.sport })));
+  rows.push(...(await fetchAutoChampions()));
+
+  const order = seasonOrder;
   const map: Record<string, ChampionTitle[]> = {};
   rows
     .sort((a, b) => order(b.season) - order(a.season))
@@ -127,4 +140,33 @@ export function useChampionTitles(team: string | null | undefined): ChampionTitl
     return () => { alive = false; };
   }, [team]);
   return titles;
+}
+
+/**
+ * Champions 페이지용 — 공식 기록 + DB 결승 결과로 자동 추가된 우승 팀 (최신 시즌이 위로).
+ * 자동 추가된 기록은 사진·기수 정보가 없으니, 필요하면 HALL_OF_FAME 에 옮겨 적어주세요.
+ */
+export function useHallOfFame(): ChampionItem[] {
+  const [items, setItems] = useState<ChampionItem[]>(HALL_OF_FAME);
+  useEffect(() => {
+    let alive = true;
+    fetchAutoChampions()
+      .then(auto => {
+        if (!alive || auto.length === 0) return;
+        setItems(
+          HALL_OF_FAME.map(item => ({
+            ...item,
+            history: [
+              ...auto
+                .filter(c => c.sport === item.sport)
+                .map(c => ({ season: prettySeason(c.season), winner: c.team, class: '', photo: '' })),
+              ...item.history,
+            ].sort((x, y) => seasonOrder(y.season) - seasonOrder(x.season)),
+          }))
+        );
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  return items;
 }

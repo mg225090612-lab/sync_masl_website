@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ChampionRecord } from '@/lib/types';
-import { HALL_OF_FAME } from '@/lib/champions';
+import { useHallOfFame } from '@/lib/champions';
 
 export default function ChampionsPage() {
   const sportsTabs = ['남자축구', '여자축구', '남자농구', '여자배구'];
@@ -10,7 +10,8 @@ export default function ChampionsPage() {
   const [selectedWinner, setSelectedWinner] = useState<ChampionRecord | null>(null);
 
   // 📝 챔피언 데이터는 lib/champions.ts 에 있습니다. (팀 이름 옆 우승 별과 함께 사용)
-  const hallOfFame = HALL_OF_FAME;
+  // 결승 결과가 나오면 새 시즌 우승 팀이 자동으로 추가됩니다.
+  const hallOfFame = useHallOfFame();
 
   const filteredData = hallOfFame.filter((item) => item.sport === activeTab);
 

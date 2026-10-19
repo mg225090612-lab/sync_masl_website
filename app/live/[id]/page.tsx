@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { uniqueChannel, minuteLabel, isDone, type MatchEvent } from '@/lib/live';
+import { uniqueChannel, minuteLabel, isDone, periodsOf, periodName, isSetBased, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
@@ -83,6 +83,7 @@ export default function LivePage({ params }: PageProps) {
   // 승리 팀이 지정돼 있으면 그 값을, 없으면 점수로 판단
   const winA = isFinished && (match.winnder_id ? match.winnder_id === match.team_a : a > b);
   const winB = isFinished && (match.winnder_id ? match.winnder_id === match.team_b : b > a);
+  const periods = periodsOf(match);
   // 최신 소식이 맨 위로
   const timeline = [...events].reverse();
 
@@ -122,6 +123,26 @@ export default function LivePage({ params }: PageProps) {
           </p>
           <Side name={match.team_b} season={match.season} dim={isFinished && !winB} />
         </div>
+
+        {/* 지금 몇 번째 구간인지 + 끝난 구간 점수 (전반/쿼터/세트) */}
+        {isLive && (
+          <p className="relative mt-5 text-center font-display text-sm font-semibold uppercase tracking-[0.08em] text-danger">
+            지금 {periodName(match.sport_type, periods.length)}
+          </p>
+        )}
+        {periods.length > 0 && (
+          <div className="relative mt-4 flex flex-wrap justify-center gap-2">
+            {periods.map((p, i) => (
+              <span key={i} className="inline-flex items-center gap-2 rounded-lg border border-edge bg-canvas/40 px-3 py-1.5 text-xs">
+                <span className="font-semibold text-fg-dim">{periodName(match.sport_type, i)}</span>
+                <span className="font-display text-sm tabular-nums text-fg">{p.a} : {p.b}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        {isFinished && isSetBased(match.sport_type) && periods.length > 0 && (
+          <p className="relative mt-2 text-center text-xs text-fg-dim">최종 점수는 이긴 세트 수입니다</p>
+        )}
       </section>
 
       {/* 타임라인 */}
