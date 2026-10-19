@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { invalidateCache, clearPhotoMissing } from '@/lib/cache';
@@ -7,6 +8,7 @@ import { isAdminUser } from '@/lib/admin';
 import { teamLogoPath } from '@/lib/teamLogo';
 import { fetchSeasons } from '@/lib/seasons';
 import TeamLogo from '@/app/components/TeamLogo';
+import LiveBadge from '@/app/components/LiveBadge';
 
 const SPORTS = ['남자축구', '여자축구', '남자농구', '여자배구'];
 
@@ -65,7 +67,11 @@ type RegTeam = { id: string; name: string; category: string; season: string };
 export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<'matches' | 'players' | 'teams'>('matches');
+  // /admin?tab=live 처럼 주소로 탭을 지정할 수 있습니다. (점수 입력 화면의 "← 경기 목록"이 사용)
+  // 첫 화면은 로그인 확인 스켈레톤이라 탭이 안 그려지므로, 서버/브라우저 값이 달라도 문제없습니다.
+  const [tab, setTab] = useState<'matches' | 'live' | 'players' | 'teams'>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'live' ? 'live' : 'matches'
+  );
 
   useEffect(() => {
     getSessionUser().then(u => {
@@ -119,7 +125,7 @@ export default function AdminPage() {
         <>
           {/* 탭 */}
           <div className="mb-8 flex gap-2">
-            {([['matches', '경기 관리'], ['players', '선수 관리'], ['teams', '팀 관리']] as const).map(([key, label]) => (
+            {([['matches', '경기 관리'], ['live', '라이브'], ['players', '선수 관리'], ['teams', '팀 관리']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -134,7 +140,7 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {tab === 'matches' ? <MatchesAdmin /> : tab === 'players' ? <PlayersAdmin /> : <TeamsAdmin />}
+          {tab === 'matches' ? <MatchesAdmin /> : tab === 'live' ? <LiveAdmin /> : tab === 'players' ? <PlayersAdmin /> : <TeamsAdmin />}
         </>
       )}
     </div>
@@ -502,6 +508,87 @@ function MatchRow({ match, hasScoreCols, onChanged }: { match: any; hasScoreCols
         </div>
       </div>
     </article>
+  );
+}
+
+/* ═══════════════════════ 라이브 중계 ═══════════════════════ */
+// 💡 경기를 고르면 그 경기 하나만 크게 띄운 점수 입력 화면(/admin/live/경기id)으로 이동합니다.
+
+function LiveAdmin() {
+  const [list, setList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from('matches')
+      .select('*')
+      .neq('status', 'finished')
+      .order('match_date', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) alert('경기 목록 로드 실패: ' + error.message);
+        setList(data || []);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="h-40 animate-pulse rounded-xl border border-edge bg-surface" />;
+
+  const live = list.filter(m => m.status === 'live');
+  const upcoming = list.filter(m => m.status !== 'live');
+
+  return (
+    <section className="space-y-8">
+      <p className="text-sm text-fg-mid">
+        점수를 넣을 경기를 누르세요. 그 경기만 크게 보이는 점수 입력 화면이 열립니다.
+      </p>
+      {live.length > 0 && <LiveAdminGroup title="진행 중" matches={live} />}
+      <LiveAdminGroup title="예정된 경기" matches={upcoming} />
+    </section>
+  );
+}
+
+function LiveAdminGroup({ title, matches }: { title: string; matches: any[] }) {
+  return (
+    <div>
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">{title}</h3>
+      {matches.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-edge bg-surface/50 px-6 py-10 text-center">
+          <p className="text-sm font-medium text-fg-dim">경기가 없습니다. &apos;경기 관리&apos; 탭에서 먼저 경기를 등록하세요.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {matches.map(m => (
+            <Link
+              key={m.id}
+              href={`/admin/live/${m.id}`}
+              className={`flex items-center gap-3 rounded-xl border bg-surface px-4 py-3 transition-colors hover:border-edge-strong ${
+                m.status === 'live' ? 'border-danger/40' : 'border-edge'
+              }`}
+            >
+              <span className="inline-flex shrink-0 items-center rounded-full border border-edge bg-raised px-2.5 py-0.5 text-xs font-semibold text-fg-mid">
+                {m.sport_type}
+              </span>
+              <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-fg">
+                {m.team_a} <span className="font-medium text-fg-dim">vs</span> {m.team_b}
+              </p>
+              {m.status === 'live' ? (
+                <>
+                  <span className="font-display text-lg tabular-nums text-fg">{m.score_a ?? 0} : {m.score_b ?? 0}</span>
+                  <LiveBadge />
+                </>
+              ) : (
+                m.match_date && (
+                  <span className="shrink-0 text-xs font-medium tabular-nums text-fg-dim">
+                    {new Date(m.match_date).toLocaleDateString('ko-KR')}
+                  </span>
+                )
+              )}
+              <span className="shrink-0 text-sm font-semibold text-accent-bright">점수 입력 →</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

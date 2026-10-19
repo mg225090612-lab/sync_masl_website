@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { isAdminUser } from '@/lib/admin';
 import { fetchSeasons } from '@/lib/seasons';
+import { useLiveMatches } from '@/lib/live';
+import LiveBadge from './LiveBadge';
 
 // spec §5.1 — top-level link recipes
 const linkIdle =
@@ -33,6 +35,8 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [seasons, setSeasons] = useState<string[]>([]);
   const pathname = usePathname();
+  // 🔴 진행 중인 경기 (관리자가 '경기 시작'을 누르면 실시간으로 나타납니다)
+  const liveMatches = useLiveMatches();
 
   // 💡 시즌 목록을 불러와 MASL 드롭다운을 자동 구성합니다. (새 시즌 경기가 생기면 메뉴도 자동 생성)
   useEffect(() => {
@@ -96,6 +100,16 @@ export default function Navbar() {
 
         {/* 오른쪽: 링크 스트립 — 모바일에서는 가로 스크롤 (spec §5.1) */}
         <div className="no-scrollbar flex min-w-0 items-center gap-3 overflow-x-auto md:gap-5 md:overflow-visible">
+          {/* 🔴 Live 메뉴 — 항상 보이고, 진행 중인 경기가 있으면 빨간 점이 깜빡입니다. (모바일에서도 바로 보이게 맨 앞) */}
+          <Link
+            href="/live"
+            title={liveMatches.map(m => `${m.team_a} ${m.score_a ?? 0} : ${m.score_b ?? 0} ${m.team_b}`).join(' / ') || undefined}
+            className={isActive('/live') ? linkActive : linkIdle}
+          >
+            {liveMatches.length > 0 ? <LiveBadge /> : 'Live'}
+            {isActive('/live') && <ActiveBar />}
+          </Link>
+
           {/* MASL 드롭다운 */}
           <div className="group relative shrink-0">
             {/* 💡 모바일(터치/키보드)에서도 진입 가능하도록 실제 링크로 만듭니다. 데스크톱 hover 드롭다운은 그대로.

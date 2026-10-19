@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { cachedQuery } from '@/lib/cache';
 import TeamLogo from '@/app/components/TeamLogo';
+import LiveBadge from '@/app/components/LiveBadge';
+import { uniqueChannel } from '@/lib/live';
 
 type SportTab = '남자축구' | '여자축구' | '남자농구' | '여자배구';
 
@@ -103,6 +105,18 @@ export default function MaslSeasonPage({ params }: PageProps) {
     };
     loadHubData();
   }, [activeTab, season]);
+
+  // 🔴 라이브: 관리자가 점수를 바꾸거나 경기를 시작/종료하면 캐시와 상관없이 카드 숫자를 바로 바꿉니다.
+  useEffect(() => {
+    const channel = supabase
+      .channel(uniqueChannel('masl-hub-live'))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, payload => {
+        const row: any = payload.new;
+        setMatches(prev => prev.map(m => (m.id === row.id ? { ...m, ...row } : m)));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const quarters = matches.filter(m => m.round === 8);
   const qf = (n: number) => quarters.find(m => m.match_order === n) || null;
@@ -418,6 +432,16 @@ function Connector({ active, flip = false }: { active: boolean; flip?: boolean }
   );
 }
 
+/* 🔴 진행 중이거나 끝난 경기 카드는 누르면 라이브(타임라인) 페이지로 이동합니다. */
+function LiveLink({ match, children }: { match: any; children: React.ReactNode }) {
+  if (match.status !== 'live' && match.status !== 'finished') return <>{children}</>;
+  return (
+    <Link href={`/live/${match.id}`} className="block w-full rounded-xl transition-opacity hover:opacity-90">
+      {children}
+    </Link>
+  );
+}
+
 /* 4강 카드 — 스코어보드 헤더 + 팀 행 */
 function SemiCard({ match, label }: { match: any; label: string }) {
   if (!match) {
@@ -434,13 +458,14 @@ function SemiCard({ match, label }: { match: any; label: string }) {
   const winA = winner === match.team_a;
   const winB = winner === match.team_b;
   return (
-    <article className="w-full overflow-hidden rounded-xl border border-edge bg-raised shadow-lg shadow-black/25">
+    <LiveLink match={match}>
+    <article className={`w-full overflow-hidden rounded-xl border bg-raised shadow-lg shadow-black/25 ${match.status === 'live' ? 'border-danger/40' : 'border-edge'}`}>
       {/* 헤더 스트립: 라운드 + 날짜 */}
       <div className="flex items-center justify-between gap-3 border-b border-edge bg-canvas/40 px-4 py-2.5">
         <p className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-fg-dim">
           {label}
         </p>
-        {match.match_date && (
+        {match.status === 'live' ? <LiveBadge /> : match.match_date && (
           <p className="text-xs font-medium tabular-nums text-fg-dim">
             {new Date(match.match_date).toLocaleDateString('ko-KR')}
           </p>
@@ -451,6 +476,7 @@ function SemiCard({ match, label }: { match: any; label: string }) {
         <SemiRow name={match.team_b} season={match.season} score={match.score_b} win={winB} />
       </div>
     </article>
+    </LiveLink>
   );
 }
 
@@ -513,7 +539,8 @@ function FinalCard({ match, compact = false }: { match: any; compact?: boolean }
     match.score_a !== undefined && match.score_a !== null &&
     match.score_b !== undefined && match.score_b !== null;
   return (
-    <article className={`relative overflow-hidden rounded-2xl border border-accent/30 bg-raised shadow-xl shadow-black/30 ${compact ? 'p-4' : 'p-5 md:p-6'}`}>
+    <LiveLink match={match}>
+    <article className={`relative overflow-hidden rounded-2xl border ${match.status === 'live' ? 'border-danger/40' : 'border-accent/30'} bg-raised shadow-xl shadow-black/30 ${compact ? 'p-4' : 'p-5 md:p-6'}`}>
       {/* 카드 상단 조명 */}
       <div
         aria-hidden="true"
@@ -528,7 +555,9 @@ function FinalCard({ match, compact = false }: { match: any; compact?: boolean }
             {new Date(match.match_date).toLocaleDateString('ko-KR')}
           </p>
         )}
-        {decided && (
+        {match.status === 'live' ? (
+          <LiveBadge />
+        ) : decided && (
           <span className="inline-flex items-center rounded-full border border-edge bg-canvas/60 px-2 py-0.5 font-display text-xs font-semibold uppercase tracking-[0.08em] text-fg-mid">
             FT
           </span>
@@ -548,6 +577,7 @@ function FinalCard({ match, compact = false }: { match: any; compact?: boolean }
         <FinalSide name={match.team_b} season={match.season} win={winB} compact={compact} />
       </div>
     </article>
+    </LiveLink>
   );
 }
 
@@ -608,15 +638,18 @@ function CompactMatchCard({ match, label }: { match: any; label: string }) {
   const winA = winner === match.team_a;
   const winB = winner === match.team_b;
   return (
-    <article className="w-full overflow-hidden rounded-xl border border-edge bg-raised shadow-lg shadow-black/25">
-      <div className="border-b border-edge bg-canvas/40 px-3 py-1.5">
+    <LiveLink match={match}>
+    <article className={`w-full overflow-hidden rounded-xl border bg-raised shadow-lg shadow-black/25 ${match.status === 'live' ? 'border-danger/40' : 'border-edge'}`}>
+      <div className="flex items-center justify-between gap-2 border-b border-edge bg-canvas/40 px-3 py-1.5">
         <p className="font-display text-xs font-semibold uppercase tracking-[0.08em] text-fg-dim">{label}</p>
+        {match.status === 'live' && <LiveBadge small />}
       </div>
       <div className="space-y-1 p-2">
         <CompactRow name={match.team_a} season={match.season} score={match.score_a} win={winA} />
         <CompactRow name={match.team_b} season={match.season} score={match.score_b} win={winB} />
       </div>
     </article>
+    </LiveLink>
   );
 }
 
