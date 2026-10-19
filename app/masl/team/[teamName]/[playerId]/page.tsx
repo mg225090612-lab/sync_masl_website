@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { cachedQuery, isPhotoMissing, markPhotoMissing } from '@/lib/cache';
 import { isDone, isUpcoming, sortUpcomingFirst } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
+import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 
 interface PlayerPageProps {
@@ -163,6 +164,7 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
               <TeamLogo name={team} season={player.season} className="h-full w-full" />
             </span>
             <span className="truncate text-xs font-semibold text-accent-bright">{team}</span>
+            <ChampionStars team={team} />
           </Link>
 
           {/* 이름 — display-ko 스케일 (spec §3.2) */}

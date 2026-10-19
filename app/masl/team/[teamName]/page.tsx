@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import ChampionStars from '@/app/components/ChampionStars';
 import Image from 'next/image'; // 💡 원본 대신 리사이즈된 이미지를 캐시해서 제공 (Supabase 요청 절감)
 import { supabase } from '@/lib/supabase';
 import { isPhotoMissing, markPhotoMissing } from '@/lib/cache';
@@ -72,8 +73,9 @@ export default function TeamPage({ params }: PageProps) {
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-bright">
           {['MASL', season, sport].filter(Boolean).join(' · ') || 'MASL Team Roster'}
         </p>
-        <h1 className="mt-3 text-3xl font-extrabold leading-[1.25] tracking-[-0.01em] text-fg md:text-5xl">
+        <h1 className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-3xl font-extrabold leading-[1.25] tracking-[-0.01em] text-fg md:text-5xl">
           {teamName}
+          <ChampionStars team={teamName} size="lg" />
         </h1>
       </header>
 

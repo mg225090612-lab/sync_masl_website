@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { uniqueChannel, minuteLabel, isDone, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
+import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 
 interface PageProps {
@@ -161,6 +162,7 @@ function Side({ name, season, dim }: { name: string; season?: string; dim: boole
         <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
       <p className={`w-full truncate text-sm font-semibold leading-[1.4] ${dim ? 'text-fg-dim' : 'text-fg'}`}>{name}</p>
+      <ChampionStars team={name} size="md" />
     </div>
   );
 }

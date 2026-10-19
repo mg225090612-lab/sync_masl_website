@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useLiveMatches, isDone, startOfToday } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
+import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 
 // 💡 라이브 모아보기 (/live) — 메뉴의 "Live"를 누르면 오는 곳입니다.
@@ -123,8 +124,10 @@ function MatchItem({ match }: { match: any }) {
         <div className="mt-1.5 flex items-center gap-2">
           <TeamLogo name={match.team_a} season={match.season} className="h-6 w-6 shrink-0" />
           <span className="min-w-0 truncate text-sm font-semibold text-fg">{match.team_a}</span>
+          <ChampionStars team={match.team_a} />
           <span className="shrink-0 text-xs text-fg-dim">vs</span>
           <span className="min-w-0 truncate text-sm font-semibold text-fg">{match.team_b}</span>
+          <ChampionStars team={match.team_b} />
           <TeamLogo name={match.team_b} season={match.season} className="h-6 w-6 shrink-0" />
         </div>
       </div>

@@ -1,48 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import type { ChampionItem, ChampionRecord } from '@/lib/types';
+import type { ChampionRecord } from '@/lib/types';
+import { HALL_OF_FAME } from '@/lib/champions';
 
 export default function ChampionsPage() {
   const sportsTabs = ['남자축구', '여자축구', '남자농구', '여자배구'];
   const [activeTab, setActiveTab] = useState<string>('남자축구');
   const [selectedWinner, setSelectedWinner] = useState<ChampionRecord | null>(null);
 
-  // 📝 챔피언 데이터 (최신 시즌이 위로 오도록 순서 변경)
-  const hallOfFame: ChampionItem[] = [
-    {
-      sport: '남자축구',
-      emoji: '⚽',
-      history: [
-        { season: '26 Spring', winner: '김영준에게 축구를 배우다', class: 'Class of 2027', photo: '' }, // 💡 26 Spring 추가
-        { season: '25 Fall', winner: '빵빵이의 축구교실', class: 'Class of 2028', photo: '/champions/남자축구 25F.JPG' },
-      ],
-    },
-    {
-      sport: '여자축구',
-      emoji: '⚽',
-      history: [
-        { season: '26 Spring', winner: '옥지의 축구교실', class: 'Class of 2028', photo: '' }, // 💡 26 Spring 추가
-        { season: '25 Fall', winner: '옥지의 축구교실', class: 'Class of 2028', photo: '/champions/여자축구 25F.JPG' },
-      ],
-    },
-    {
-      sport: '남자농구',
-      emoji: '🏀',
-      history: [
-        { season: '26 Spring', winner: '빵빵이의 농구교실', class: 'Class of 2028', photo: '' },
-        { season: '25 Fall', winner: '머리 큰 조던', class: 'Class of 2026', photo: '/champions/남자농구 25F.JPG' },
-      ],
-    },
-    {
-      sport: '여자배구',
-      emoji: '🏐',
-      history: [
-        { season: '26 Spring', winner: '어~시니어야~', class: 'Class of 2027', photo: '' },
-        { season: '25 Fall', winner: '개천에서 용 난다', class: '연합팀', photo: '/champions/여자배구 25F.JPG' },
-      ],
-    },
-  ];
+  // 📝 챔피언 데이터는 lib/champions.ts 에 있습니다. (팀 이름 옆 우승 별과 함께 사용)
+  const hallOfFame = HALL_OF_FAME;
 
   const filteredData = hallOfFame.filter((item) => item.sport === activeTab);
 

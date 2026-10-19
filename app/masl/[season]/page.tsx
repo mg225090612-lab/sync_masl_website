@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { cachedQuery } from '@/lib/cache';
 import TeamLogo from '@/app/components/TeamLogo';
+import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 import { uniqueChannel } from '@/lib/live';
 
@@ -406,7 +407,10 @@ export default function MaslSeasonPage({ params }: PageProps) {
               >
                 <TeamLogo name={name} season={season} className="h-12 w-12 shrink-0" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-fg">{name}</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+                    <span className="truncate">{name}</span>
+                    <ChampionStars team={name} />
+                  </p>
                   <p className="mt-0.5 text-xs text-fg-dim">선수단 보기 →</p>
                 </div>
               </Link>
@@ -492,11 +496,12 @@ function SemiRow({ name, season, score, win }: { name: string; season?: string; 
         <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
       <span
-        className={`min-w-0 flex-1 truncate text-sm font-semibold leading-[1.4] ${
+        className={`flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold leading-[1.4] ${
           win ? 'text-fg' : 'text-fg-dim'
         }`}
       >
-        {name || 'TBD'}
+        <span className="truncate">{name || 'TBD'}</span>
+        <ChampionStars team={name} />
       </span>
       {win && (
         <span className="inline-flex shrink-0 items-center rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent-bright">
@@ -599,6 +604,7 @@ function FinalSide({ name, season, win, compact = false }: { name: string; seaso
       >
         {name || 'TBD'}
       </p>
+      <ChampionStars team={name} size={compact ? 'sm' : 'md'} />
       {win && (
         <span className="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent-bright">
           WIN
@@ -617,7 +623,10 @@ function ChampionCrest({ name, season }: { name: string; season: string }) {
         <p className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-away">
           Champion · {season}
         </p>
-        <p className="truncate text-lg font-bold leading-[1.3] text-fg">{name}</p>
+        <p className="flex items-center justify-center gap-1.5 text-lg font-bold leading-[1.3] text-fg">
+          <span className="truncate">{name}</span>
+          <ChampionStars team={name} size="md" />
+        </p>
       </div>
     </div>
   );
@@ -661,8 +670,9 @@ function CompactRow({ name, season, score, win }: { name: string; season?: strin
       >
         <TeamLogo name={name} season={season} className="h-full w-full" />
       </span>
-      <span className={`min-w-0 flex-1 truncate text-xs font-semibold leading-[1.4] ${win ? 'text-fg' : 'text-fg-dim'}`}>
-        {name || 'TBD'}
+      <span className={`flex min-w-0 flex-1 items-center gap-1 text-xs font-semibold leading-[1.4] ${win ? 'text-fg' : 'text-fg-dim'}`}>
+        <span className="truncate">{name || 'TBD'}</span>
+        <ChampionStars team={name} />
       </span>
       {score !== undefined && score !== null && (
         <span className={`font-display text-base font-medium leading-none tabular-nums ${win ? 'text-accent-bright' : 'text-fg-dim'}`}>
@@ -700,7 +710,10 @@ function ByeCard({ team, season, label }: { team: string; season?: string; label
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-edge bg-canvas/60 p-0.5">
           <TeamLogo name={team} season={season} className="h-full w-full" />
         </span>
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold leading-[1.4] text-fg">{team}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1 text-xs font-semibold leading-[1.4] text-fg">
+          <span className="truncate">{team}</span>
+          <ChampionStars team={team} />
+        </span>
         <span className="inline-flex shrink-0 items-center rounded-full border border-away/30 bg-away/10 px-2 py-0.5 text-xs font-semibold text-away">
           부전승
         </span>
