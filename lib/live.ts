@@ -103,3 +103,38 @@ export function sortUpcomingFirst<T>(list: T[]): T[] {
   const past = list.filter(m => !isUpcoming(m)).sort((x, y) => timeOf(y) - timeOf(x));
   return [...upcoming, ...past];
 }
+
+/* ── 구간(전반·후반 / 쿼터 / 세트) ─────────────────────────────
+   '구간 종료'를 누르면 그 구간 점수가 matches.periods 에 저장되고 점수판은 0 : 0으로 리셋됩니다.
+   (DB 준비: supabase/periods_setup.sql) */
+export type Period = { a: number; b: number };
+
+export function periodsOf(m: any): Period[] {
+  return Array.isArray(m?.periods) ? m.periods : [];
+}
+
+/** 몇 번째 구간인지 종목에 맞는 이름으로 (index는 0부터) */
+export function periodName(sport: string | null | undefined, index: number) {
+  if (sport?.includes('축구')) return index === 0 ? '전반' : index === 1 ? '후반' : `연장 ${index - 1}`;
+  if (sport?.includes('농구')) return `${index + 1}쿼터`;
+  if (sport?.includes('배구')) return `${index + 1}세트`;
+  return `${index + 1}라운드`;
+}
+
+/** 배구는 세트를 이긴 횟수로 판단합니다. */
+export function isSetBased(sport: string | null | undefined) {
+  return !!sport?.includes('배구');
+}
+
+/**
+ * 최종 점수 계산 — 배구는 이긴 세트 수(예: 2 : 1), 나머지 종목은 모든 구간 점수의 합.
+ */
+export function finalScore(sport: string | null | undefined, periods: Period[]): Period {
+  if (isSetBased(sport)) {
+    return {
+      a: periods.filter(p => p.a > p.b).length,
+      b: periods.filter(p => p.b > p.a).length,
+    };
+  }
+  return periods.reduce((s, p) => ({ a: s.a + p.a, b: s.b + p.b }), { a: 0, b: 0 });
+}

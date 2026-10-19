@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { invalidateCache } from '@/lib/cache';
 import { isAdminUser } from '@/lib/admin';
-import { uniqueChannel, minuteLabel, type MatchEvent } from '@/lib/live';
+import { uniqueChannel, minuteLabel, periodsOf, periodName, finalScore, isSetBased, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
 
@@ -102,8 +102,14 @@ function Scorer({ id }: { id: string }) {
   const isFinished = match.status === 'finished';
   const a = match.score_a ?? 0;
   const b = match.score_b ?? 0;
+  const periods = periodsOf(match);
+  const currentName = periodName(match.sport_type, periods.length);
+
+  // DB에 periods 칸이 아직 없으면(supabase/periods_setup.sql 실행 전) 그 값은 빼고 저장합니다.
+  const hasPeriodsCol = 'periods' in match;
 
   const updateMatch = async (row: Record<string, any>) => {
+    if (!hasPeriodsCol) delete row.periods;
     setBusy(true);
     const { data, error } = await supabase.from('matches').update(row).eq('id', match.id).select().maybeSingle();
     setBusy(false);
@@ -131,13 +137,27 @@ function Scorer({ id }: { id: string }) {
     await insertEvent(delta > 0 ? `${team} 득점! (${na} : ${nb})` : `${team} 득점 취소 (${na} : ${nb})`);
   };
 
+  // 💡 전반/쿼터/세트가 끝나면: 지금 점수를 기록(periods)에 저장하고 점수판을 0 : 0으로 리셋합니다.
+  const endPeriod = async () => {
+    if (!hasPeriodsCol) return alert('구간 기록 칸이 아직 없습니다.\nSupabase SQL Editor에서 supabase/periods_setup.sql 을 먼저 실행해 주세요.');
+    if (!confirm(`${currentName}을(를) 끝낼까요?\n${currentName} 점수 ${a} : ${b} 를 기록하고 점수판을 0 : 0으로 리셋합니다.`)) return;
+    const ok = await updateMatch({ periods: [...periods, { a, b }], score_a: 0, score_b: 0 });
+    if (ok) await insertEvent(`${currentName} 종료 (${a} : ${b})`);
+  };
+
   const end = async () => {
-    const winner = a > b ? match.team_a : b > a ? match.team_b : null;
+    // 진행 중인 구간에 점수가 있으면(또는 구간을 한 번도 안 나눴으면) 마지막 구간으로 포함합니다.
+    const all = a > 0 || b > 0 || periods.length === 0 ? [...periods, { a, b }] : periods;
+    const fin = finalScore(match.sport_type, all);
+    const winner = fin.a > fin.b ? match.team_a : fin.b > fin.a ? match.team_b : null;
+    const unit = isSetBased(match.sport_type) ? '세트 ' : '';
+    const detail = all.map((p, i) => `${periodName(match.sport_type, i)} ${p.a} : ${p.b}`).join('\n');
     const msg = winner
-      ? `경기를 종료할까요?\n최종 ${a} : ${b} → 승리 팀: ${winner}`
-      : `경기를 종료할까요?\n최종 ${a} : ${b} (동점 — 승리 팀은 '경기 관리' 탭에서 직접 지정해 주세요)`;
+      ? `경기를 종료할까요?\n\n${detail}\n\n최종 ${unit}${fin.a} : ${fin.b} → 승리 팀: ${winner}`
+      : `경기를 종료할까요?\n\n${detail}\n\n최종 ${unit}${fin.a} : ${fin.b} (동점 — 승리 팀은 '경기 관리' 탭에서 직접 지정해 주세요)`;
     if (!confirm(msg)) return;
-    await updateMatch({ status: 'finished', winnder_id: winner });
+    const ok = await updateMatch({ status: 'finished', periods: all, score_a: fin.a, score_b: fin.b, winnder_id: winner });
+    if (ok) await insertEvent(`경기 종료 — 최종 ${unit}${fin.a} : ${fin.b}`);
   };
 
   // 테스트로 눌러본 경기 등을 완전히 처음 상태로 돌립니다. (점수·승리 팀·타임라인 모두 삭제)
@@ -149,12 +169,14 @@ function Scorer({ id }: { id: string }) {
     setBusy(false);
     if (error) return alert('타임라인 삭제 실패: ' + error.message);
     setEvents([]);
-    await updateMatch({ status: 'scheduled', score_a: null, score_b: null, winnder_id: null });
+    await updateMatch({ status: 'scheduled', score_a: null, score_b: null, winnder_id: null, periods: [] });
   };
 
   const reopen = async () => {
-    if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?')) return;
-    await updateMatch({ status: 'live', winnder_id: null });
+    if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?\n마지막 구간 점수가 점수판으로 돌아옵니다.')) return;
+    // 종료 때 합쳐진 최종 점수 대신, 마지막 구간을 다시 꺼내 이어서 진행합니다.
+    const last = periods[periods.length - 1] || { a: 0, b: 0 };
+    await updateMatch({ status: 'live', winnder_id: null, periods: periods.slice(0, -1), score_a: last.a, score_b: last.b });
   };
 
   const insertEvent = async (text: string) => {
@@ -185,9 +207,9 @@ function Scorer({ id }: { id: string }) {
 
   // 자주 쓰는 문장 — 누르면 입력칸에 채워집니다. (득점은 +1 버튼이 자동으로 올립니다)
   const presets = [
-    '전반 종료',
-    '후반 시작',
+    '경기 재개',
     '타임아웃',
+    '선수 교체',
   ];
 
   return (
@@ -210,6 +232,11 @@ function Scorer({ id }: { id: string }) {
 
       {/* 점수판 — 큰 버튼 */}
       <section className={`rounded-2xl border bg-raised p-4 sm:p-6 ${isLive ? 'border-danger/40' : 'border-edge'}`}>
+        {isLive && (
+          <p className="mb-4 text-center font-display text-sm font-semibold uppercase tracking-[0.08em] text-danger">
+            지금 {currentName}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:gap-6">
           <TeamScore name={match.team_a} season={match.season} score={a} disabled={!isLive || busy}
             onPlus={() => addScore('a', 1)} onMinus={() => addScore('a', -1)} />
@@ -217,7 +244,15 @@ function Scorer({ id }: { id: string }) {
             onPlus={() => addScore('b', 1)} onMinus={() => addScore('b', -1)} />
         </div>
 
+        <PeriodTable sport={match.sport_type} periods={periods} />
+
         <div className="mt-6">
+          {isLive && (
+            <button onClick={endPeriod} disabled={busy}
+              className="mb-2 h-14 w-full rounded-xl border border-edge-strong text-base font-semibold text-fg transition-colors hover:bg-surface disabled:opacity-50">
+              {currentName} 종료 → 0 : 0 리셋
+            </button>
+          )}
           {isLive ? (
             <button onClick={end} disabled={busy}
               className="h-14 w-full rounded-xl border border-danger/30 bg-danger/10 text-base font-semibold text-danger transition-colors hover:bg-danger/20 disabled:opacity-50">
@@ -308,6 +343,21 @@ function TeamScore({ name, season, score, disabled, onPlus, onMinus }: {
         className="h-10 w-full rounded-lg border border-edge-strong text-sm font-semibold text-fg-mid transition-colors hover:bg-surface disabled:opacity-30">
         -1 (취소)
       </button>
+    </div>
+  );
+}
+
+/* 끝난 구간 점수 기록 (예: 1세트 25:20 · 2세트 18:25) */
+function PeriodTable({ sport, periods }: { sport: string; periods: { a: number; b: number }[] }) {
+  if (periods.length === 0) return null;
+  return (
+    <div className="mt-5 flex flex-wrap justify-center gap-2">
+      {periods.map((p, i) => (
+        <span key={i} className="inline-flex items-center gap-2 rounded-lg border border-edge bg-canvas/40 px-3 py-1.5 text-xs">
+          <span className="font-semibold text-fg-dim">{periodName(sport, i)}</span>
+          <span className="font-display text-sm tabular-nums text-fg">{p.a} : {p.b}</span>
+        </span>
+      ))}
     </div>
   );
 }
