@@ -126,6 +126,16 @@ export function isSetBased(sport: string | null | undefined) {
   return !!sport?.includes('배구');
 }
 
+/** 종목별 득점 버튼 단위 — 농구는 자유투(+1)/2점/3점을 한 번에 올립니다. */
+export function scoreSteps(sport: string | null | undefined): number[] {
+  return sport?.includes('농구') ? [1, 2, 3] : [1];
+}
+
+/** 기록된 구간 점수의 합 (농구·축구처럼 점수가 누적되는 종목에서 구간별 득점 계산용) */
+export function sumPeriods(periods: Period[]): Period {
+  return periods.reduce((s, p) => ({ a: s.a + p.a, b: s.b + p.b }), { a: 0, b: 0 });
+}
+
 /**
  * 최종 점수 계산 — 배구는 이긴 세트 수(예: 2 : 1), 나머지 종목은 모든 구간 점수의 합.
  */

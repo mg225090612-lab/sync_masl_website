@@ -124,6 +124,15 @@ export default function LivePage({ params }: PageProps) {
           <Side name={match.team_b} season={match.season} dim={isFinished && !winB} />
         </div>
 
+        {/* 팀 파울 (농구, 경기 중에만) — 쿼터가 끝나면 0으로 리셋됩니다 */}
+        {isLive && match.sport_type?.includes('농구') && 'fouls_a' in match && (
+          <div className="relative mt-4 grid grid-cols-[1fr_auto_1fr] items-center">
+            <FoulChip count={match.fouls_a ?? 0} />
+            <span className="px-2 text-xs font-medium text-fg-dim">팀 파울</span>
+            <FoulChip count={match.fouls_b ?? 0} />
+          </div>
+        )}
+
         {/* 지금 몇 번째 구간인지 + 끝난 구간 점수 (전반/쿼터/세트) */}
         {isLive && (
           <p className="relative mt-5 text-center font-display text-sm font-semibold uppercase tracking-[0.08em] text-danger">
@@ -169,6 +178,14 @@ export default function LivePage({ params }: PageProps) {
         )}
       </section>
     </div>
+  );
+}
+
+function FoulChip({ count }: { count: number }) {
+  return (
+    <span className="justify-self-center rounded-full border border-edge bg-canvas/40 px-3 py-1 font-display text-sm font-semibold tabular-nums">
+      <span className={count >= 5 ? 'text-danger' : 'text-fg'}>{count}</span>
+    </span>
   );
 }
 

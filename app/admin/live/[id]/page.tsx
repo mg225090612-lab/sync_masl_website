@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { invalidateCache } from '@/lib/cache';
 import { isAdminUser } from '@/lib/admin';
-import { uniqueChannel, minuteLabel, periodsOf, periodName, finalScore, isSetBased, type MatchEvent } from '@/lib/live';
+import { uniqueChannel, minuteLabel, periodsOf, periodName, finalScore, isSetBased, scoreSteps, sumPeriods, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
 
@@ -104,12 +104,20 @@ function Scorer({ id }: { id: string }) {
   const b = match.score_b ?? 0;
   const periods = periodsOf(match);
   const currentName = periodName(match.sport_type, periods.length);
+  // 배구만 세트 종료 때 점수판을 0:0으로 리셋합니다. (농구·축구는 점수가 그대로 누적)
+  const setBased = isSetBased(match.sport_type);
+  const isBasketball = !!match.sport_type?.includes('농구');
+  const foulsA = match.fouls_a ?? 0;
+  const foulsB = match.fouls_b ?? 0;
 
   // DB에 periods 칸이 아직 없으면(supabase/periods_setup.sql 실행 전) 그 값은 빼고 저장합니다.
   const hasPeriodsCol = 'periods' in match;
+  // 파울 칸도 마찬가지 (supabase/fouls_setup.sql 실행 전이면 빼고 저장)
+  const hasFoulsCol = 'fouls_a' in match;
 
   const updateMatch = async (row: Record<string, any>) => {
     if (!hasPeriodsCol) delete row.periods;
+    if (!hasFoulsCol) { delete row.fouls_a; delete row.fouls_b; }
     setBusy(true);
     const { data, error } = await supabase.from('matches').update(row).eq('id', match.id).select().maybeSingle();
     setBusy(false);
@@ -121,7 +129,7 @@ function Scorer({ id }: { id: string }) {
 
   const start = async () => {
     if (!confirm(`[${match.team_a} vs ${match.team_b}] 경기를 시작할까요?\n사이트 전체에 LIVE 표시가 켜집니다.`)) return;
-    await updateMatch({ status: 'live', score_a: match.score_a ?? 0, score_b: match.score_b ?? 0 });
+    await updateMatch({ status: 'live', score_a: match.score_a ?? 0, score_b: match.score_b ?? 0, fouls_a: 0, fouls_b: 0 });
   };
 
   // 💡 점수를 바꾸면 타임라인에도 자동으로 한 줄 올라갑니다. (위 '분' 칸에 숫자가 있으면 함께 기록)
@@ -134,30 +142,68 @@ function Scorer({ id }: { id: string }) {
     const team = side === 'a' ? match.team_a : match.team_b;
     const na = side === 'a' ? next : a;
     const nb = side === 'b' ? next : b;
-    await insertEvent(delta > 0 ? `${team} 득점! (${na} : ${nb})` : `${team} 득점 취소 (${na} : ${nb})`);
+    await insertEvent(
+      delta > 0
+        ? `${team} ${delta >= 2 ? `${delta}점 ` : ''}득점! (${na} : ${nb})`
+        : `${team} 득점 취소 (${na} : ${nb})`
+    );
   };
 
-  // 💡 전반/쿼터/세트가 끝나면: 지금 점수를 기록(periods)에 저장하고 점수판을 0 : 0으로 리셋합니다.
+  // 💡 팀 파울 — 농구 전용. 쿼터가 끝나면 자동으로 0이 됩니다.
+  const addFoul = async (side: 'a' | 'b', delta: number) => {
+    if (!hasFoulsCol) return alert('파울 기록 칸이 아직 없습니다.\nSupabase SQL Editor에서 supabase/fouls_setup.sql 을 먼저 실행해 주세요.');
+    const current = side === 'a' ? foulsA : foulsB;
+    const next = Math.max(0, current + delta);
+    if (next === current) return;
+    await updateMatch(side === 'a' ? { fouls_a: next } : { fouls_b: next });
+  };
+
+  // 💡 전반/쿼터/세트 종료.
+  //    배구: 세트 점수를 기록하고 점수판을 0 : 0으로 리셋 (세트제라서)
+  //    농구·축구: 구간 득점만 기록하고 점수는 그대로 누적! (파울만 0으로 리셋)
   const endPeriod = async () => {
     if (!hasPeriodsCol) return alert('구간 기록 칸이 아직 없습니다.\nSupabase SQL Editor에서 supabase/periods_setup.sql 을 먼저 실행해 주세요.');
-    if (!confirm(`${currentName}을(를) 끝낼까요?\n${currentName} 점수 ${a} : ${b} 를 기록하고 점수판을 0 : 0으로 리셋합니다.`)) return;
-    const ok = await updateMatch({ periods: [...periods, { a, b }], score_a: 0, score_b: 0 });
-    if (ok) await insertEvent(`${currentName} 종료 (${a} : ${b})`);
+    if (setBased) {
+      if (!confirm(`${currentName}을(를) 끝낼까요?\n${currentName} 점수 ${a} : ${b} 를 기록하고 점수판을 0 : 0으로 리셋합니다.`)) return;
+      const ok = await updateMatch({ periods: [...periods, { a, b }], score_a: 0, score_b: 0 });
+      if (ok) await insertEvent(`${currentName} 종료 (${a} : ${b})`);
+      return;
+    }
+    const prev = sumPeriods(periods);
+    const diff = { a: Math.max(0, a - prev.a), b: Math.max(0, b - prev.b) };
+    const foulNote = isBasketball && hasFoulsCol ? '\n(팀 파울은 0으로 리셋됩니다)' : '';
+    if (!confirm(`${currentName}을(를) 끝낼까요?\n${currentName} 득점 ${diff.a} : ${diff.b} 를 기록합니다.\n점수판은 ${a} : ${b} 그대로 이어집니다.${foulNote}`)) return;
+    const ok = await updateMatch({ periods: [...periods, diff], fouls_a: 0, fouls_b: 0 });
+    if (ok) await insertEvent(`${currentName} 종료 (${currentName} ${diff.a} : ${diff.b} · 누적 ${a} : ${b})`);
   };
 
   const end = async () => {
-    // 진행 중인 구간에 점수가 있으면(또는 구간을 한 번도 안 나눴으면) 마지막 구간으로 포함합니다.
-    const all = a > 0 || b > 0 || periods.length === 0 ? [...periods, { a, b }] : periods;
-    const fin = finalScore(match.sport_type, all);
-    const winner = fin.a > fin.b ? match.team_a : fin.b > fin.a ? match.team_b : null;
-    const unit = isSetBased(match.sport_type) ? '세트 ' : '';
+    if (setBased) {
+      // 배구: 진행 중인 세트에 점수가 있으면(또는 세트를 한 번도 안 나눴으면) 마지막 세트로 포함합니다.
+      const all = a > 0 || b > 0 || periods.length === 0 ? [...periods, { a, b }] : periods;
+      const fin = finalScore(match.sport_type, all);
+      const winner = fin.a > fin.b ? match.team_a : fin.b > fin.a ? match.team_b : null;
+      const detail = all.map((p, i) => `${periodName(match.sport_type, i)} ${p.a} : ${p.b}`).join('\n');
+      const msg = winner
+        ? `경기를 종료할까요?\n\n${detail}\n\n최종 세트 ${fin.a} : ${fin.b} → 승리 팀: ${winner}`
+        : `경기를 종료할까요?\n\n${detail}\n\n최종 세트 ${fin.a} : ${fin.b} (동점 — 승리 팀은 '경기 관리' 탭에서 직접 지정해 주세요)`;
+      if (!confirm(msg)) return;
+      const ok = await updateMatch({ status: 'finished', periods: all, score_a: fin.a, score_b: fin.b, winnder_id: winner });
+      if (ok) await insertEvent(`경기 종료 — 최종 세트 ${fin.a} : ${fin.b}`);
+      return;
+    }
+    // 농구·축구: 점수판 숫자가 그대로 최종 점수입니다. 마지막 구간 득점도 기록에 포함합니다.
+    const prev = sumPeriods(periods);
+    const lastDiff = { a: Math.max(0, a - prev.a), b: Math.max(0, b - prev.b) };
+    const all = lastDiff.a > 0 || lastDiff.b > 0 || periods.length === 0 ? [...periods, lastDiff] : periods;
+    const winner = a > b ? match.team_a : b > a ? match.team_b : null;
     const detail = all.map((p, i) => `${periodName(match.sport_type, i)} ${p.a} : ${p.b}`).join('\n');
     const msg = winner
-      ? `경기를 종료할까요?\n\n${detail}\n\n최종 ${unit}${fin.a} : ${fin.b} → 승리 팀: ${winner}`
-      : `경기를 종료할까요?\n\n${detail}\n\n최종 ${unit}${fin.a} : ${fin.b} (동점 — 승리 팀은 '경기 관리' 탭에서 직접 지정해 주세요)`;
+      ? `경기를 종료할까요?\n\n${detail}\n\n최종 ${a} : ${b} → 승리 팀: ${winner}`
+      : `경기를 종료할까요?\n\n${detail}\n\n최종 ${a} : ${b} (동점 — 승리 팀은 '경기 관리' 탭에서 직접 지정해 주세요)`;
     if (!confirm(msg)) return;
-    const ok = await updateMatch({ status: 'finished', periods: all, score_a: fin.a, score_b: fin.b, winnder_id: winner });
-    if (ok) await insertEvent(`경기 종료 — 최종 ${unit}${fin.a} : ${fin.b}`);
+    const ok = await updateMatch({ status: 'finished', periods: all, score_a: a, score_b: b, winnder_id: winner });
+    if (ok) await insertEvent(`경기 종료 — 최종 ${a} : ${b}`);
   };
 
   // 테스트로 눌러본 경기 등을 완전히 처음 상태로 돌립니다. (점수·승리 팀·타임라인 모두 삭제)
@@ -169,14 +215,20 @@ function Scorer({ id }: { id: string }) {
     setBusy(false);
     if (error) return alert('타임라인 삭제 실패: ' + error.message);
     setEvents([]);
-    await updateMatch({ status: 'scheduled', score_a: null, score_b: null, winnder_id: null, periods: [] });
+    await updateMatch({ status: 'scheduled', score_a: null, score_b: null, winnder_id: null, periods: [], fouls_a: 0, fouls_b: 0 });
   };
 
   const reopen = async () => {
-    if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?\n마지막 구간 점수가 점수판으로 돌아옵니다.')) return;
-    // 종료 때 합쳐진 최종 점수 대신, 마지막 구간을 다시 꺼내 이어서 진행합니다.
-    const last = periods[periods.length - 1] || { a: 0, b: 0 };
-    await updateMatch({ status: 'live', winnder_id: null, periods: periods.slice(0, -1), score_a: last.a, score_b: last.b });
+    if (setBased) {
+      if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?\n마지막 세트 점수가 점수판으로 돌아옵니다.')) return;
+      // 종료 때 합쳐진 세트 스코어 대신, 마지막 세트를 다시 꺼내 이어서 진행합니다.
+      const last = periods[periods.length - 1] || { a: 0, b: 0 };
+      await updateMatch({ status: 'live', winnder_id: null, periods: periods.slice(0, -1), score_a: last.a, score_b: last.b });
+      return;
+    }
+    // 농구·축구: 점수는 누적 그대로, 마지막 구간 기록만 다시 꺼냅니다.
+    if (!confirm('종료한 경기를 다시 진행 중으로 바꿀까요?\n점수는 그대로 이어집니다.')) return;
+    await updateMatch({ status: 'live', winnder_id: null, periods: periods.slice(0, -1) });
   };
 
   const insertEvent = async (text: string) => {
@@ -239,9 +291,13 @@ function Scorer({ id }: { id: string }) {
         )}
         <div className="grid grid-cols-2 gap-3 sm:gap-6">
           <TeamScore name={match.team_a} season={match.season} score={a} disabled={!isLive || busy}
-            onPlus={() => addScore('a', 1)} onMinus={() => addScore('a', -1)} />
+            steps={scoreSteps(match.sport_type)}
+            fouls={isBasketball ? foulsA : null}
+            onScore={d => addScore('a', d)} onFoul={d => addFoul('a', d)} />
           <TeamScore name={match.team_b} season={match.season} score={b} disabled={!isLive || busy}
-            onPlus={() => addScore('b', 1)} onMinus={() => addScore('b', -1)} />
+            steps={scoreSteps(match.sport_type)}
+            fouls={isBasketball ? foulsB : null}
+            onScore={d => addScore('b', d)} onFoul={d => addFoul('b', d)} />
         </div>
 
         <PeriodTable sport={match.sport_type} periods={periods} />
@@ -250,7 +306,7 @@ function Scorer({ id }: { id: string }) {
           {isLive && (
             <button onClick={endPeriod} disabled={busy}
               className="mb-2 h-14 w-full rounded-xl border border-edge-strong text-base font-semibold text-fg transition-colors hover:bg-surface disabled:opacity-50">
-              {currentName} 종료 → 0 : 0 리셋
+              {setBased ? `${currentName} 종료 → 0 : 0 리셋` : `${currentName} 종료 (점수는 그대로 이어집니다)`}
             </button>
           )}
           {isLive ? (
@@ -325,8 +381,15 @@ function Scorer({ id }: { id: string }) {
   );
 }
 
-function TeamScore({ name, season, score, disabled, onPlus, onMinus }: {
-  name: string; season?: string; score: number; disabled: boolean; onPlus: () => void; onMinus: () => void;
+function TeamScore({ name, season, score, disabled, steps, fouls, onScore, onFoul }: {
+  name: string;
+  season?: string;
+  score: number;
+  disabled: boolean;
+  steps: number[];           // 득점 버튼 단위 (농구 [1,2,3], 그 외 [1])
+  fouls: number | null;      // null이면 파울 UI를 숨깁니다 (농구가 아닌 종목)
+  onScore: (delta: number) => void;
+  onFoul: (delta: number) => void;
 }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-3 text-center">
@@ -335,14 +398,34 @@ function TeamScore({ name, season, score, disabled, onPlus, onMinus }: {
       </span>
       <p className="w-full truncate text-sm font-semibold text-fg">{name}</p>
       <p className="font-display text-6xl font-medium leading-none tabular-nums text-fg sm:text-7xl">{score}</p>
-      <button onClick={onPlus} disabled={disabled}
-        className="h-16 w-full rounded-xl bg-accent font-display text-2xl font-semibold text-canvas transition-colors hover:bg-accent-bright active:opacity-80 disabled:opacity-30">
-        +1
-      </button>
-      <button onClick={onMinus} disabled={disabled}
+      <div className={`grid w-full gap-2 ${steps.length > 1 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+        {steps.map(s => (
+          <button key={s} onClick={() => onScore(s)} disabled={disabled}
+            className="h-16 w-full rounded-xl bg-accent font-display text-2xl font-semibold text-canvas transition-colors hover:bg-accent-bright active:opacity-80 disabled:opacity-30">
+            +{s}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onScore(-1)} disabled={disabled}
         className="h-10 w-full rounded-lg border border-edge-strong text-sm font-semibold text-fg-mid transition-colors hover:bg-surface disabled:opacity-30">
         -1 (취소)
       </button>
+      {fouls !== null && (
+        <div className="flex w-full items-center justify-center gap-2 rounded-lg border border-edge bg-canvas/40 px-2 py-2">
+          <span className="text-xs font-medium text-fg-dim">팀 파울</span>
+          <button onClick={() => onFoul(-1)} disabled={disabled}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-edge-strong text-base font-semibold text-fg-mid transition-colors hover:bg-surface disabled:opacity-30">
+            −
+          </button>
+          <span className={`min-w-7 text-center font-display text-xl font-semibold tabular-nums ${fouls >= 5 ? 'text-danger' : 'text-fg'}`}>
+            {fouls}
+          </span>
+          <button onClick={() => onFoul(1)} disabled={disabled}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-edge-strong text-base font-semibold text-fg-mid transition-colors hover:bg-surface disabled:opacity-30">
+            +
+          </button>
+        </div>
+      )}
     </div>
   );
 }

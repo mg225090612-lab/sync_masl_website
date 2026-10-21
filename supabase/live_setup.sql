@@ -64,7 +64,8 @@ create policy "match_events 관리자만 쓰기"
       'mg224081322@gvcs-mg.org',
       'mg225100342@gvcs-mg.org',
       'mg223080612@gvcs-mg.org',
-      'mg225090451@gvcs-mg.org'
+      'mg225090451@gvcs-mg.org',
+      'mg224101122@gvcs-mg.org'
     )
   )
   with check (
@@ -75,7 +76,8 @@ create policy "match_events 관리자만 쓰기"
       'mg224081322@gvcs-mg.org',
       'mg225100342@gvcs-mg.org',
       'mg223080612@gvcs-mg.org',
-      'mg225090451@gvcs-mg.org'
+      'mg225090451@gvcs-mg.org',
+      'mg224101122@gvcs-mg.org'
     )
   );
 
