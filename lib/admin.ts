@@ -9,6 +9,7 @@ export const ADMIN_EMAILS = [
   'mg225100342@gvcs-mg.org',
   'mg223080612@gvcs-mg.org',
   'mg225090451@gvcs-mg.org',
+  'mg224101122@gvcs-mg.org',
 ];
 
 export function isAdminUser(user: { email?: string | null } | null | undefined): boolean {
