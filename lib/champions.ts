@@ -53,6 +53,7 @@ export type ChampionTitle = { season: string; sport: string; label: string };
  */
 export const TEAM_GROUPS: string[][] = [
   ['김영준 레전드 축구단', '김영준에게 축구를 배우다'],
+  ['바르셧노라', '바르셨노라'],
 ];
 
 /** 같은 팀으로 묶인 이름이면 대표(지금) 이름으로 바꿉니다. */
