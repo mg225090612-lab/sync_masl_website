@@ -160,12 +160,13 @@ export function scoreText(sport: string | null | undefined, team: string, delta:
   return `${team} 득점 ${score}`;
 }
 
+/** 배구 한 세트를 이기는 점수 (학교 리그 규칙: 모든 세트 15점) */
+export const VOLLEYBALL_SET_POINTS = 15;
+
 /**
- * 배구 세트가 끝났는지 — 25점(5세트는 15점) 이상이면서 2점 차 이상.
- * index는 지금 세트 번호(0부터).
+ * 배구 세트가 끝났는지 — 15점 이상이면서 2점 차 이상 (14:14면 2점 차가 날 때까지 계속).
  */
-export function isSetOver(sport: string | null | undefined, index: number, a: number, b: number) {
+export function isSetOver(sport: string | null | undefined, _index: number, a: number, b: number) {
   if (!isSetBased(sport)) return false;
-  const target = index >= 4 ? 15 : 25;
-  return Math.max(a, b) >= target && Math.abs(a - b) >= 2;
+  return Math.max(a, b) >= VOLLEYBALL_SET_POINTS && Math.abs(a - b) >= 2;
 }
