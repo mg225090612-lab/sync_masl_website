@@ -47,6 +47,19 @@ export const HALL_OF_FAME: ChampionItem[] = [
 
 export type ChampionTitle = { season: string; sport: string; label: string };
 
+/**
+ * 💡 이름이 바뀌었지만 같은 팀인 경우 — 한 줄에 같은 팀의 이름들을 적으면 우승 별이 함께 붙습니다.
+ * 맨 앞 이름이 지금 이름입니다.
+ */
+export const TEAM_GROUPS: string[][] = [
+  ['김영준 레전드 축구단', '김영준에게 축구를 배우다'],
+];
+
+/** 같은 팀으로 묶인 이름이면 대표(지금) 이름으로 바꿉니다. */
+export function canonicalTeam(name: string) {
+  return TEAM_GROUPS.find(g => g.includes(name))?.[0] ?? name;
+}
+
 /** '26 Spring' → '2026년 봄학기' / '25 fall' → '2025년 가을학기' */
 export function seasonLabel(season: string) {
   const m = season.trim().match(/^(\d{2,4})\s*(spring|fall|autumn|summer|winter)?/i);
@@ -117,7 +130,10 @@ async function fetchTitles(): Promise<Record<string, ChampionTitle[]>> {
   rows
     .sort((a, b) => order(b.season) - order(a.season))
     .forEach(r => {
-      (map[r.team] ||= []).push({ season: r.season, sport: r.sport, label: `${seasonLabel(r.season)} ${r.sport} 우승` });
+      const key = canonicalTeam(r.team);
+      // 예전 이름으로 우승했으면 그 이름도 함께 보여줍니다.
+      const oldName = key !== r.team ? ` (당시 ${r.team})` : '';
+      (map[key] ||= []).push({ season: r.season, sport: r.sport, label: `${seasonLabel(r.season)} ${r.sport} 우승${oldName}` });
     });
   return map;
 }
@@ -135,7 +151,7 @@ export function useChampionTitles(team: string | null | undefined): ChampionTitl
       return {};
     });
     titlesPromise.then(map => {
-      if (alive) setTitles(map[team] || []);
+      if (alive) setTitles(map[canonicalTeam(team)] || []);
     });
     return () => { alive = false; };
   }, [team]);

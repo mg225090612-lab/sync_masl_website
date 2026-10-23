@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { supabase, getSessionUser } from '@/lib/supabase';
 import { invalidateCache } from '@/lib/cache';
 import { isAdminUser } from '@/lib/admin';
-import { uniqueChannel, minuteLabel, periodsOf, periodName, finalScore, isSetBased, scoreSteps, sumPeriods, type MatchEvent } from '@/lib/live';
+import { uniqueChannel, minuteLabel, periodsOf, periodName, finalScore, isSetBased, scoreSteps, sumPeriods, scoreText, isSetOver, type MatchEvent } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
 import LiveBadge from '@/app/components/LiveBadge';
 
 const inputCls =
   'h-12 w-full rounded-lg border border-edge bg-surface px-3 text-base font-medium text-fg transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25';
+
+// 경기 시작 시각을 알아내는 기준이 되는 타임라인 문구
+const START_TEXT = '경기 시작';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -58,8 +61,13 @@ function Scorer({ id }: { id: string }) {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [minute, setMinute] = useState('');
   const [content, setContent] = useState('');
+  // 화면의 '경기 시작 후 N분' 표시를 30초마다 갱신합니다.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30 * 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -127,12 +135,18 @@ function Scorer({ id }: { id: string }) {
     return true;
   };
 
+  // 💡 '경기 시작' 소식이 올라간 시각이 경기 시작 시각입니다. 이후 소식에는 '몇 분째'가 자동으로 붙습니다.
+  const startEvent = [...events].reverse().find(e => e.content === START_TEXT);
+  const startedAt = startEvent ? new Date(startEvent.created_at).getTime() : null;
+  const minuteNow = (at: number) => (startedAt === null ? null : Math.max(1, Math.floor((at - startedAt) / 60000) + 1));
+
   const start = async () => {
     if (!confirm(`[${match.team_a} vs ${match.team_b}] 경기를 시작할까요?\n사이트 전체에 LIVE 표시가 켜집니다.`)) return;
-    await updateMatch({ status: 'live', score_a: match.score_a ?? 0, score_b: match.score_b ?? 0, fouls_a: 0, fouls_b: 0 });
+    const ok = await updateMatch({ status: 'live', score_a: match.score_a ?? 0, score_b: match.score_b ?? 0, fouls_a: 0, fouls_b: 0 });
+    if (ok && !startEvent) await insertEvent(START_TEXT, 0);
   };
 
-  // 💡 점수를 바꾸면 타임라인에도 자동으로 한 줄 올라갑니다. (위 '분' 칸에 숫자가 있으면 함께 기록)
+  // 💡 점수를 바꾸면 타임라인에도 자동으로 한 줄 올라갑니다. (경기 시작 후 몇 분째인지도 자동 기록)
   const addScore = async (side: 'a' | 'b', delta: number) => {
     const current = side === 'a' ? a : b;
     const next = Math.max(0, current + delta);
@@ -142,11 +156,20 @@ function Scorer({ id }: { id: string }) {
     const team = side === 'a' ? match.team_a : match.team_b;
     const na = side === 'a' ? next : a;
     const nb = side === 'b' ? next : b;
-    await insertEvent(
-      delta > 0
-        ? `${team} ${delta >= 2 ? `${delta}점 ` : ''}득점! (${na} : ${nb})`
-        : `${team} 득점 취소 (${na} : ${nb})`
-    );
+    await insertEvent(scoreText(match.sport_type, team, delta, na, nb));
+    // 🏐 배구: 세트 점수에 도달하면 세트를 끝낼지 물어봅니다.
+    if (delta > 0 && isSetOver(match.sport_type, periods.length, na, nb)) {
+      const setWinner = na > nb ? match.team_a : match.team_b;
+      if (confirm(`${currentName}이 끝났나요?\n${na} : ${nb} — ${setWinner} 세트 승리\n\n확인을 누르면 세트를 기록하고 0 : 0으로 리셋합니다.`)) {
+        await endSet(na, nb);
+      }
+    }
+  };
+
+  // 배구 세트 종료 (세트 점수 기록 후 0 : 0 리셋). sa/sb는 방금 바뀐 점수 — 화면 값이 아직 갱신 전일 수 있어서 직접 받습니다.
+  const endSet = async (sa: number, sb: number) => {
+    const ok = await updateMatch({ periods: [...periods, { a: sa, b: sb }], score_a: 0, score_b: 0 });
+    if (ok) await insertEvent(`${currentName} 종료 (${sa} : ${sb})`);
   };
 
   // 💡 팀 파울 — 농구 전용. 쿼터가 끝나면 자동으로 0이 됩니다.
@@ -165,8 +188,7 @@ function Scorer({ id }: { id: string }) {
     if (!hasPeriodsCol) return alert('구간 기록 칸이 아직 없습니다.\nSupabase SQL Editor에서 supabase/periods_setup.sql 을 먼저 실행해 주세요.');
     if (setBased) {
       if (!confirm(`${currentName}을(를) 끝낼까요?\n${currentName} 점수 ${a} : ${b} 를 기록하고 점수판을 0 : 0으로 리셋합니다.`)) return;
-      const ok = await updateMatch({ periods: [...periods, { a, b }], score_a: 0, score_b: 0 });
-      if (ok) await insertEvent(`${currentName} 종료 (${a} : ${b})`);
+      await endSet(a, b);
       return;
     }
     const prev = sumPeriods(periods);
@@ -231,11 +253,11 @@ function Scorer({ id }: { id: string }) {
     await updateMatch({ status: 'live', winnder_id: null, periods: periods.slice(0, -1) });
   };
 
-  const insertEvent = async (text: string) => {
+  const insertEvent = async (text: string, fixedMinute?: number) => {
     setBusy(true);
     const { data, error } = await supabase
       .from('match_events')
-      .insert({ match_id: match.id, minute: minute === '' ? null : Number(minute), content: text })
+      .insert({ match_id: match.id, minute: fixedMinute ?? minuteNow(Date.now()), content: text })
       .select()
       .maybeSingle();
     setBusy(false);
@@ -287,6 +309,7 @@ function Scorer({ id }: { id: string }) {
         {isLive && (
           <p className="mb-4 text-center font-display text-sm font-semibold uppercase tracking-[0.08em] text-danger">
             지금 {currentName}
+            {startedAt !== null && <span className="ml-2 text-fg-mid">· 경기 시작 후 {minuteNow(now)}분</span>}
           </p>
         )}
         <div className="grid grid-cols-2 gap-3 sm:gap-6">
@@ -340,7 +363,7 @@ function Scorer({ id }: { id: string }) {
       {/* 타임라인 소식 */}
       <section className="rounded-2xl border border-edge bg-surface p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-fg">타임라인 소식 올리기</h2>
-        <p className="mt-1 text-xs text-fg-dim">점수 버튼을 누르면 &quot;득점!&quot; 소식이 자동으로 올라갑니다. &apos;분&apos; 칸을 채워두면 시간도 함께 기록돼요.</p>
+        <p className="mt-1 text-xs text-fg-dim">점수 버튼을 누르면 &quot;득점!&quot; 소식이 자동으로 올라갑니다. 경기 시작 후 몇 분째인지도 자동으로 기록돼요.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {presets.map(p => (
             <button key={p} onClick={() => setContent(p)}
@@ -350,8 +373,6 @@ function Scorer({ id }: { id: string }) {
           ))}
         </div>
         <div className="mt-3 flex gap-2">
-          <input type="number" inputMode="numeric" min={0} value={minute} onChange={e => setMinute(e.target.value)}
-            placeholder="분" className={`${inputCls} w-20 shrink-0 text-center tabular-nums`} />
           <input value={content} onChange={e => setContent(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) postEvent(); }}
             placeholder="예: 김민준 선수 골!" maxLength={200} className={`${inputCls} min-w-0 flex-1`} />

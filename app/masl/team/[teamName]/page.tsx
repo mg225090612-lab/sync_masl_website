@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import ChampionStars from '@/app/components/ChampionStars';
+import TeamInfoChips from '@/app/components/TeamInfoChips';
+import { useTeamInfo } from '@/lib/teamInfo';
 import Image from 'next/image'; // 💡 원본 대신 리사이즈된 이미지를 캐시해서 제공 (Supabase 요청 절감)
 import { supabase } from '@/lib/supabase';
 import { isPhotoMissing, markPhotoMissing } from '@/lib/cache';
@@ -29,6 +31,8 @@ export default function TeamPage({ params }: PageProps) {
   const [season, setSeason] = useState<string | null>(null);
   const [sport, setSport] = useState<string | null>(null);
   const [seasonReady, setSeasonReady] = useState(false);
+  // 팀 정보: 학년 · 색깔 · 각오
+  const info = useTeamInfo(teamName, season, sport);
 
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
@@ -77,6 +81,17 @@ export default function TeamPage({ params }: PageProps) {
           {teamName}
           <ChampionStars team={teamName} size="lg" />
         </h1>
+        {info && (info.grade || info.color) && (
+          <div className="mt-4">
+            <TeamInfoChips info={info} />
+          </div>
+        )}
+        {info?.motto && (
+          <blockquote className="mt-5 max-w-2xl border-l-2 border-accent/50 pl-4 text-[15px] leading-[1.65] text-fg-mid">
+            <span className="mr-2 text-xs font-semibold text-fg-dim">각오</span>
+            &ldquo;{info.motto}&rdquo;
+          </blockquote>
+        )}
       </header>
 
       {loading ? (
@@ -151,7 +166,12 @@ function PlayerCard({ p, teamName }: { p: any; teamName: string }) {
         <span className="shrink-0 font-display text-sm font-medium tabular-nums text-fg-dim">
           {p.player_number}
         </span>
-        <p className="min-w-0 truncate text-sm font-semibold text-fg">{p.name}</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-fg">{p.name}</p>
+        {p.position && (
+          <span className="max-w-[45%] shrink-0 truncate rounded-md border border-edge bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-fg-mid">
+            {p.position}
+          </span>
+        )}
       </div>
     </Link>
   );

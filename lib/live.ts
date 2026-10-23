@@ -148,3 +148,24 @@ export function finalScore(sport: string | null | undefined, periods: Period[]):
   }
   return periods.reduce((s, p) => ({ a: s.a + p.a, b: s.b + p.b }), { a: 0, b: 0 });
 }
+
+/* ── 종목별 점수 입력 ─────────────────────────────────────── */
+
+/** 점수가 올라갈 때 타임라인에 자동으로 올라가는 문구 */
+export function scoreText(sport: string | null | undefined, team: string, delta: number, a: number, b: number) {
+  const score = `(${a} : ${b})`;
+  if (delta < 0) return `${team} 점수 정정 ${score}`;
+  if (sport?.includes('축구')) return `${team} ⚽ 골! ${score}`;
+  if (sport?.includes('농구')) return `${team} ${delta === 3 ? '3점슛!' : delta === 2 ? '2점 득점!' : '자유투 성공'} ${score}`;
+  return `${team} 득점 ${score}`;
+}
+
+/**
+ * 배구 세트가 끝났는지 — 25점(5세트는 15점) 이상이면서 2점 차 이상.
+ * index는 지금 세트 번호(0부터).
+ */
+export function isSetOver(sport: string | null | undefined, index: number, a: number, b: number) {
+  if (!isSetBased(sport)) return false;
+  const target = index >= 4 ? 15 : 25;
+  return Math.max(a, b) >= target && Math.abs(a - b) >= 2;
+}

@@ -63,7 +63,7 @@ async function fileToPngBlob(file: File, maxSize = 1000): Promise<Blob> {
 
 /* ── 시즌별 참가팀 등록부 — Supabase의 teams 테이블 한 행 = "이 팀이 이 시즌·종목에 참가" ──
    운영진 누구든 등록하면 전원의 화면과 자동완성에 공유됩니다. */
-type RegTeam = { id: string; name: string; category: string; season: string };
+type RegTeam = { id: string; name: string; category: string; season: string; grade?: string | null; color?: string | null; motto?: string | null };
 
 export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true);
@@ -737,7 +737,7 @@ function NewPlayerForm({
   onSaved: () => Promise<void>;
 }) {
   const [f, setF] = useState({
-    name: '', player_number: '', team_name: defaultTeam, category: defaultSport, season: defaultSeason,
+    name: '', player_number: '', position: '', team_name: defaultTeam, category: defaultSport, season: defaultSeason,
   });
   const [saving, setSaving] = useState(false);
 
@@ -746,16 +746,18 @@ function NewPlayerForm({
     if (!f.team_name) return alert('팀 이름을 입력해주세요.');
     setSaving(true);
     // 💡 같은 팀 이름이 시즌마다 다른 팀일 수 있으므로, 선수는 시즌 소속으로 저장합니다.
-    const { error } = await supabase.from('players').insert({
+    const row: any = {
       name: f.name,
       player_number: f.player_number === '' ? null : Number(f.player_number),
       team_name: f.team_name,
       category: f.category,
       season: f.season || null,
-    });
+    };
+    if (f.position.trim()) row.position = f.position.trim(); // 포지션 칸(supabase/team_info_setup.sql)이 있을 때만
+    const { error } = await supabase.from('players').insert(row);
     setSaving(false);
     if (error) return alert('저장 실패: ' + error.message);
-    setF({ ...f, name: '', player_number: '' }); // 같은 팀에 연속 등록하기 편하게 팀은 유지
+    setF({ ...f, name: '', player_number: '', position: '' }); // 같은 팀에 연속 등록하기 편하게 팀은 유지
     await onSaved();
   };
 
@@ -770,6 +772,10 @@ function NewPlayerForm({
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-fg-dim">등번호</span>
           <input type="number" min={0} value={f.player_number} onChange={e => setF({ ...f, player_number: e.target.value })} className={inputCls} placeholder="10" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-fg-dim">포지션 (선택)</span>
+          <input value={f.position} onChange={e => setF({ ...f, position: e.target.value })} className={inputCls} placeholder="예: ST, 가드" />
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-fg-dim">팀</span>
@@ -807,7 +813,7 @@ function TeamsAdmin() {
   const [filterSport, setFilterSport] = useState('');
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [nf, setNf] = useState({ name: '', category: SPORTS[0], season: '' });
+  const [nf, setNf] = useState({ name: '', category: SPORTS[0], season: '', grade: '', color: '', motto: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -882,15 +888,18 @@ function TeamsAdmin() {
     if (regTeams.some(t => t.name === name && t.season === nf.season && t.category === nf.category))
       return alert('이미 등록된 팀입니다.');
     setSaving(true);
-    const { error } = await supabase
-      .from('teams')
-      .insert({ name, category: nf.category, season: nf.season });
+    const row: any = { name, category: nf.category, season: nf.season };
+    // 학년·색깔·각오는 적었을 때만 저장 (칸이 없는 DB에서도 등록은 되도록)
+    if (nf.grade.trim()) row.grade = nf.grade.trim();
+    if (nf.color.trim()) row.color = nf.color.trim();
+    if (nf.motto.trim()) row.motto = nf.motto.trim();
+    const { error } = await supabase.from('teams').insert(row);
     setSaving(false);
     if (error)
       return alert(
         '팀 등록 실패: ' + error.message + '\n(teams 테이블 생성 SQL을 아직 실행하지 않았다면 먼저 실행해주세요.)'
       );
-    setNf(n => ({ ...n, name: '' }));
+    setNf(n => ({ ...n, name: '', grade: '', color: '', motto: '' }));
     setShowNew(false);
     invalidateCache('');
     await load();
@@ -944,6 +953,18 @@ function TeamsAdmin() {
                 {seasonOptions.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">학년 (선택)</span>
+              <input value={nf.grade} onChange={e => setNf({ ...nf, grade: e.target.value })} className={inputCls} placeholder="예: 12학년, 중등연합" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">팀 색깔 (선택)</span>
+              <input value={nf.color} onChange={e => setNf({ ...nf, color: e.target.value })} className={inputCls} placeholder="예: 검정색 / 빨강, 파랑" />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-fg-dim">각오 (선택)</span>
+              <input value={nf.motto} onChange={e => setNf({ ...nf, motto: e.target.value })} className={inputCls} placeholder="예: 언제나 웃음 잃지 않기" />
+            </label>
           </div>
           <div className="mt-5 flex justify-end">
             <button onClick={addTeam} disabled={saving} className={btnPrimary}>
@@ -975,6 +996,8 @@ function TeamsAdmin() {
               key={t.name}
               team={{ name: t.name, categories: t.categories }}
               regSeasons={t.seasons}
+              regEntries={regTeams.filter(r => r.name === t.name)}
+              onInfoSaved={load}
               onRemoveReg={() => removeReg(t.name, t.seasons)}
             />
           ))}
@@ -985,12 +1008,15 @@ function TeamsAdmin() {
 }
 
 function TeamLogoRow({
-  team, regSeasons = [], onRemoveReg,
+  team, regSeasons = [], regEntries = [], onInfoSaved, onRemoveReg,
 }: {
   team: { name: string; categories: string[] };
   regSeasons?: string[];
+  regEntries?: RegTeam[];
+  onInfoSaved?: () => Promise<void>;
   onRemoveReg?: () => void;
 }) {
+  const [showInfo, setShowInfo] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ver, setVer] = useState(0); // 업로드/삭제 직후 썸네일 강제 새로고침용
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1087,9 +1113,53 @@ function TeamLogoRow({
             <button onClick={onRemoveReg} disabled={uploading} className={btnGhost}>등록 해제</button>
           )}
           <button onClick={removeLogo} disabled={uploading} className={btnGhost}>로고 삭제</button>
+          {regEntries.length > 0 && (
+            <button onClick={() => setShowInfo(v => !v)} className={btnGhost}>
+              {showInfo ? '정보 닫기' : '학년·색깔·각오'}
+            </button>
+          )}
         </div>
       </div>
+      {showInfo && (
+        <div className="mt-3 space-y-2 border-t border-edge pt-3">
+          {regEntries.map(entry => (
+            <TeamInfoForm key={entry.id} entry={entry} onSaved={onInfoSaved} />
+          ))}
+        </div>
+      )}
     </article>
+  );
+}
+
+/* 시즌·종목별 팀 정보(학년·색깔·각오) 수정 한 줄 */
+function TeamInfoForm({ entry, onSaved }: { entry: RegTeam; onSaved?: () => Promise<void> }) {
+  const [f, setF] = useState({ grade: entry.grade || '', color: entry.color || '', motto: entry.motto || '' });
+  const [busy, setBusy] = useState(false);
+  const hasCols = 'grade' in entry; // supabase/team_info_setup.sql 실행 후에 생기는 칸
+
+  const save = async () => {
+    setBusy(true);
+    const { error } = await supabase
+      .from('teams')
+      .update({ grade: f.grade.trim() || null, color: f.color.trim() || null, motto: f.motto.trim() || null })
+      .eq('id', entry.id);
+    setBusy(false);
+    if (error) return alert('저장 실패: ' + error.message);
+    invalidateCache('');
+    await onSaved?.();
+  };
+
+  if (!hasCols) {
+    return <p className="text-xs text-fg-dim">팀 정보 칸이 아직 없습니다. supabase/team_info_setup.sql 을 먼저 실행해 주세요.</p>;
+  }
+  return (
+    <div className="grid items-center gap-2 sm:grid-cols-[auto_8rem_10rem_1fr_auto]">
+      <span className="text-xs font-semibold text-fg-mid">{entry.season} · {entry.category}</span>
+      <input value={f.grade} onChange={e => setF({ ...f, grade: e.target.value })} className={inputCls} placeholder="학년" />
+      <input value={f.color} onChange={e => setF({ ...f, color: e.target.value })} className={inputCls} placeholder="팀 색깔" />
+      <input value={f.motto} onChange={e => setF({ ...f, motto: e.target.value })} className={inputCls} placeholder="각오" />
+      <button onClick={save} disabled={busy} className={btnPrimary}>저장</button>
+    </div>
   );
 }
 
@@ -1104,9 +1174,11 @@ function PlayerRow({
   const [f, setF] = useState({
     name: player.name || '',
     player_number: player.player_number ?? '',
+    position: player.position || '',
     team_name: player.team_name || '',
     season: player.season || '',
   });
+  const hasPositionCol = 'position' in player; // supabase/team_info_setup.sql 실행 후에 생기는 칸
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photoVer, setPhotoVer] = useState(0); // 업로드 후 썸네일 캐시 무력화용
@@ -1125,6 +1197,7 @@ function PlayerRow({
         player_number: f.player_number === '' ? null : Number(f.player_number),
         team_name: f.team_name,
         season: f.season || null,
+        ...(hasPositionCol ? { position: f.position.trim() || null } : {}),
       })
       .eq('id', player.id);
     setBusy(false);
@@ -1214,6 +1287,14 @@ function PlayerRow({
           className={`${inputCls} w-20 text-center tabular-nums`}
           placeholder="번호"
         />
+        {hasPositionCol && (
+          <input
+            value={f.position}
+            onChange={e => setF({ ...f, position: e.target.value })}
+            className={`${inputCls} w-28`}
+            placeholder="포지션"
+          />
+        )}
         <input
           value={f.team_name}
           onChange={e => setF({ ...f, team_name: e.target.value })}

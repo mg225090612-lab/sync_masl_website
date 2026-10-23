@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { cachedQuery } from '@/lib/cache';
 import TeamLogo from '@/app/components/TeamLogo';
+import { useTeamInfos, findTeamInfo } from '@/lib/teamInfo';
 import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 import { uniqueChannel } from '@/lib/live';
@@ -39,6 +40,7 @@ export default function MaslSeasonPage({ params }: PageProps) {
   const [teams, setTeams] = useState<string[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const teamInfos = useTeamInfos(season); // 팀 학년 표시용
 
   // 💡 [추가] 페이지가 처음 켜질 때, 이전에 보던 종목이 있다면 불러옵니다.
   useEffect(() => {
@@ -411,7 +413,9 @@ export default function MaslSeasonPage({ params }: PageProps) {
                     <span className="truncate">{name}</span>
                     <ChampionStars team={name} />
                   </p>
-                  <p className="mt-0.5 text-xs text-fg-dim">선수단 보기 →</p>
+                  <p className="mt-0.5 text-xs text-fg-dim">
+                    {findTeamInfo(teamInfos, name, activeTab)?.grade ? `${findTeamInfo(teamInfos, name, activeTab)?.grade} · ` : ''}선수단 보기 →
+                  </p>
                 </div>
               </Link>
             ))}

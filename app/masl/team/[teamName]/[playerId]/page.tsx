@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { cachedQuery, isPhotoMissing, markPhotoMissing } from '@/lib/cache';
 import { isDone, isUpcoming, sortUpcomingFirst } from '@/lib/live';
 import TeamLogo from '@/app/components/TeamLogo';
+import TeamInfoChips from '@/app/components/TeamInfoChips';
+import { useTeamInfo } from '@/lib/teamInfo';
 import ChampionStars from '@/app/components/ChampionStars';
 import LiveBadge from '@/app/components/LiveBadge';
 
@@ -27,6 +29,7 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
   const [matches, setMatches] = useState<any[]>([]);
   // 💡 사진이 없다고 이미 확인된 선수는 처음부터 요청을 보내지 않습니다.
   const [imgError, setImgError] = useState(() => isPhotoMissing(playerId));
+  const teamInfo = useTeamInfo(player?.team_name || teamName, player?.season, player?.category);
 
   useEffect(() => {
     const load = async () => {
@@ -176,6 +179,8 @@ export default function PlayerDetailPage({ params }: PlayerPageProps) {
             <Chip>{player.category || 'PLAYER'}</Chip>
             {player.season && <Chip>{player.season}</Chip>}
             <Chip>No. {player.player_number}</Chip>
+            {player.position && <Chip>{player.position}</Chip>}
+            <TeamInfoChips info={teamInfo} />
           </div>
 
           {/* 기록 요약 타일 */}
