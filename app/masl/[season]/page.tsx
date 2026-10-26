@@ -156,33 +156,28 @@ export default function MaslSeasonPage({ params }: PageProps) {
 
   const hasBracket = !!(semi1 || semi2 || finalMatch || quarters.length > 0);
 
-  const qfTeams = quarters.flatMap(m => [m.team_a, m.team_b]).filter(Boolean) as string[];
-
   // 💡 부전승 자동 감지: QF 슬롯이 비었는데 해당 4강 경기에 "다른 QF 승자가 아닌 팀"이 있으면
-  // 그 팀이 부전승으로 직행한 것으로 표시합니다. (별도 데이터 입력 불필요)
-  // 단, 이전 라운드를 실제로 치른 팀은 부전승 후보에서 제외합니다.
-  const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean, played: string[]): string | null => {
+  // 그 팀을 그 슬롯에 부전승으로 표시합니다. (별도 데이터 입력 불필요)
+  // 대진이 교차된 대회(다른 쪽 QF 승자가 이 4강에 온 경우)에도 슬롯이 비지 않게 합니다.
+  const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean): string | null => {
     if (selfQf || !sf) return null;
     const otherWinner = winnerOf(otherQf);
-    const cands = [sf.team_a, sf.team_b]
-      .filter(Boolean)
-      .filter((t: string) => t !== otherWinner)
-      .filter((t: string) => !played.includes(t));
+    const cands = [sf.team_a, sf.team_b].filter(Boolean).filter((t: string) => t !== otherWinner);
     if (cands.length === 1) return cands[0];
     if (cands.length === 2) return second ? cands[1] : cands[0];
     return null;
   };
   const byes = [
-    byeFor(semi1, qf(1), qf(2), false, qfTeams),
-    byeFor(semi1, qf(2), qf(1), true, qfTeams),
-    byeFor(semi2, qf(3), qf(4), false, qfTeams),
-    byeFor(semi2, qf(4), qf(3), true, qfTeams),
+    byeFor(semi1, qf(1), qf(2), false),
+    byeFor(semi1, qf(2), qf(1), true),
+    byeFor(semi2, qf(3), qf(4), false),
+    byeFor(semi2, qf(4), qf(3), true),
   ];
 
   // 4강 부전승: 4강 경기 없이 결승으로 직행한 팀 (결승 경기에서 자동 감지)
   const sfByes = [
-    byeFor(finalMatch, semi1, semi2, false, semiTeams),
-    byeFor(finalMatch, semi2, semi1, true, semiTeams),
+    byeFor(finalMatch, semi1, semi2, false),
+    byeFor(finalMatch, semi2, semi1, true),
   ];
 
   // QF 슬롯: 경기 있음 → 카드 / 부전승 → BYE 카드 / 둘 다 아니면 대진 미정
