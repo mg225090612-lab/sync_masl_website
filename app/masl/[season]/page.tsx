@@ -121,37 +121,68 @@ export default function MaslSeasonPage({ params }: PageProps) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const quarters = matches.filter(m => m.round === 8);
-  const qf = (n: number) => quarters.find(m => m.match_order === n) || null;
-  const semis = matches.filter(m => m.round === 4);
-  const semi1 = semis.find(m => m.match_order === 1) || null;
-  const semi2 = semis.find(m => m.match_order === 2) || null;
   const finalMatch = matches.find(m => m.round === 2) || null;
+  const semisAll = matches.filter(m => m.round === 4);
+  const finalTeams = finalMatch ? [finalMatch.team_a, finalMatch.team_b].filter(Boolean) : [];
+  const semiTeams = semisAll.flatMap(m => [m.team_a, m.team_b]).filter(Boolean) as string[];
+
+  // 💡 승자 미입력 보완: 승리 팀도 스코어도 없어도, 다음 라운드 경기에 올라간 팀이 있으면
+  // 그 팀을 승자로 간주해 표시합니다. (화면 표시용 — DB는 바꾸지 않음)
+  const withInferred = (m: any, nextRoundTeams: string[]) => {
+    if (!m || winnerOf(m)) return m;
+    const aIn = !!m.team_a && nextRoundTeams.includes(m.team_a);
+    const bIn = !!m.team_b && nextRoundTeams.includes(m.team_b);
+    if (aIn !== bIn) return { ...m, winnder_id: aIn ? m.team_a : m.team_b };
+    return m;
+  };
+
+  const quarters = matches
+    .filter(m => m.round === 8)
+    .map(m => withInferred(m, semiTeams.length > 0 ? semiTeams : finalTeams));
+  const qf = (n: number) => quarters.find(m => m.match_order === n) || null;
+
+  // 💡 4강 슬롯 배치: match_order가 겹치거나 빠져 있어도(입력 실수) 두 경기를 각 슬롯에 채웁니다.
+  let semi1 = semisAll.find(m => m.match_order === 1) || null;
+  let semi2 = semisAll.find(m => m.match_order === 2) || null;
+  if (!semi1 || !semi2) {
+    const rest = semisAll.filter(m => m !== semi1 && m !== semi2);
+    if (!semi1) semi1 = rest.shift() || null;
+    if (!semi2) semi2 = rest.shift() || null;
+  }
+  semi1 = withInferred(semi1, finalTeams);
+  semi2 = withInferred(semi2, finalTeams);
+
   const championName = winnerOf(finalMatch);
 
   const hasBracket = !!(semi1 || semi2 || finalMatch || quarters.length > 0);
 
+  const qfTeams = quarters.flatMap(m => [m.team_a, m.team_b]).filter(Boolean) as string[];
+
   // 💡 부전승 자동 감지: QF 슬롯이 비었는데 해당 4강 경기에 "다른 QF 승자가 아닌 팀"이 있으면
   // 그 팀이 부전승으로 직행한 것으로 표시합니다. (별도 데이터 입력 불필요)
-  const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean): string | null => {
+  // 단, 이전 라운드를 실제로 치른 팀은 부전승 후보에서 제외합니다.
+  const byeFor = (sf: any, selfQf: any, otherQf: any, second: boolean, played: string[]): string | null => {
     if (selfQf || !sf) return null;
     const otherWinner = winnerOf(otherQf);
-    const cands = [sf.team_a, sf.team_b].filter(Boolean).filter((t: string) => t !== otherWinner);
+    const cands = [sf.team_a, sf.team_b]
+      .filter(Boolean)
+      .filter((t: string) => t !== otherWinner)
+      .filter((t: string) => !played.includes(t));
     if (cands.length === 1) return cands[0];
     if (cands.length === 2) return second ? cands[1] : cands[0];
     return null;
   };
   const byes = [
-    byeFor(semi1, qf(1), qf(2), false),
-    byeFor(semi1, qf(2), qf(1), true),
-    byeFor(semi2, qf(3), qf(4), false),
-    byeFor(semi2, qf(4), qf(3), true),
+    byeFor(semi1, qf(1), qf(2), false, qfTeams),
+    byeFor(semi1, qf(2), qf(1), true, qfTeams),
+    byeFor(semi2, qf(3), qf(4), false, qfTeams),
+    byeFor(semi2, qf(4), qf(3), true, qfTeams),
   ];
 
   // 4강 부전승: 4강 경기 없이 결승으로 직행한 팀 (결승 경기에서 자동 감지)
   const sfByes = [
-    byeFor(finalMatch, semi1, semi2, false),
-    byeFor(finalMatch, semi2, semi1, true),
+    byeFor(finalMatch, semi1, semi2, false, semiTeams),
+    byeFor(finalMatch, semi2, semi1, true, semiTeams),
   ];
 
   // QF 슬롯: 경기 있음 → 카드 / 부전승 → BYE 카드 / 둘 다 아니면 대진 미정
